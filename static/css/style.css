@@ -1,0 +1,153 @@
+/* Archivo: static/css/style.css */
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+
+header {
+    background-color: #9e213d;
+    color: white;
+    padding: 10px 20px;
+    text-align: center;
+    position: relative;
+}
+
+header h1 {
+    color: white;
+}
+
+.header-button {
+    position: absolute;
+    top: 10px;
+    padding: 8px 15px;
+    border-radius: 5px;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-logout {
+    right: 20px;
+    background-color: #dc3545;
+}
+
+.btn-dashboard {
+    left: 20px;
+    background-color: #6c757d;
+}
+
+.container {
+    width: 90%;
+    margin: 20px auto;
+    background-color: #fff;
+    padding: 20px;
+    box-shadow: 0 0 10px 0 rgba(0,0,0,0.1);
+}
+
+.filter-form, .add-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.filter-form label, .add-form label {
+    flex: 1 1 100px;
+    margin-bottom: 5px;
+}
+
+.filter-form select, .add-form input[type="text"], .filter-form input[type="submit"], .add-form input[type="submit"], .btn-filter, .btn-heatmap, .btn-outservice, .btn-original {
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ddd;
+}
+
+.btn-filter, .btn-heatmap, .btn-outservice, .btn-original {
+    cursor: pointer;
+    background-color: #a50909;
+    color: white;
+}
+
+button, input[type="submit"] {
+    background-color: #a3092f;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin-top: 10px;
+    cursor: pointer;
+}
+
+button:hover, input[type="submit"]:hover {
+    background-color: #a3092f;
+}
+
+footer {
+    text-align: center;
+    padding: 20px 0;
+    background-color: #ffffff;
+    color: #8a656e;
+}
+
+.form-input {
+    margin: 10px 0;
+    padding: 10px;
+    width: calc(100% - 22px);
+    display: block;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+}
+
+/* Estilos adicionales para centrar el formulario de login */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Usar toda la altura de la ventana */
+}
+
+.login-box {
+    background-color: white;
+    padding: 20px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    width: 300px;
+    border-radius: 8px;
+}
+
+/* Tabla */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+}
+
+.table th, .table td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: center;
+}
+
+.table th {
+    background-color: #343a40;
+    color: white;
+}
+
+.btn-edit, .btn-delete {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.btn-edit {
+    background-color: #28a745;
+    color: white;
+}
+
+.btn-delete {
+    background-color: #dc3545;
+    color: white;
+}

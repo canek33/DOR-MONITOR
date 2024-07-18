@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Super Admin - ISSSTE</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="/static/css/dashboard_admin.css">
+</head>
+<body>
+    <header>
+        <h1 class="text-center my-4">Dashboard Super Admin - ISSSTE</h1>
+        <div style="position: absolute; top: 10px; right: 20px;">
+            <a href="/logout" class="btn btn-danger">Cerrar Sesión</a>
+        </div>
+    </header>
+    <div class="container">
+        <h2 class="mt-4">Mapa de la República Mexicana</h2>
+        <div id="mapid" style="height: 400px;" class="mb-4"></div>
+
+        <div class="d-flex justify-content-between mb-4">
+            <a href="/estadisticas" class="btn btn-primary">Ver Estadísticas</a>
+            <a href="/mapas" class="btn btn-primary">Ver Mapa</a>
+            <a href="/elevadores" class="btn btn-primary">Ver Mapa de Elevadores</a>
+            <a href="/aires" class="btn btn-primary">Ver Mapa de Aires</a>
+            <a href="/gestionar_usuarios" class="btn btn-primary">Gestionar Usuarios</a>
+        </div>
+
+        <h2>Filtrar Información</h2>
+        <form id="filterForm" class="mb-4">
+            <div class="form-row">
+                <div class="form-group col-md-6">
+                    <label for="estado">Estado:</label>
+                    <select name="estado" id="estado" class="form-control">
+                        <option value="">Seleccione un Estado</option>
+                        {% for estado in estados %}
+                        <option value="{{ estado }}">{{ estado }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group col-md-6">
+                    <label for="categoria">Categoría del Problema:</label>
+                    <select name="categoria" id="categoria" class="form-control">
+                        <option value="">Seleccione una Categoría</option>
+                        <option value="Infraestructura">Infraestructura</option>
+                        <option value="Personal">Personal</option>
+                        <option value="Insumos">Insumos</option>
+                        <option value="Servicios Auxiliares">Servicios Auxiliares</option>
+                        <option value="Otros">Otros</option>
+                    </select>
+                </div>
+            </div>
+            <button type="submit" class="btn btn-success">Filtrar Datos</button>
+            <button type="reset" class="btn btn-secondary ml-2">Resetear Filtros</button>
+        </form>
+
+        <h2>Resultados de Filtrado</h2>
+        <div id="resultadosFiltrados">
+            <!-- Los resultados filtrados se mostrarán aquí -->
+        </div>
+        
+        <h2>Panel de Problemas Reportados</h2>
+        <table class="table table-bordered">
+            <thead class="thead-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Unidad Médica</th>
+                    <th>Categoría</th>
+                    <th>Subcategoría</th>
+                    <th>Descripción</th>
+                    <th>Estado</th>
+                    <th>Nivel de Riesgo</th>
+                    <th>Actualizaciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if problemas %}
+                {% for problema in problemas %}
+                <tr>
+                    <td>{{ problema.ticket_id }}</td>
+                    <td>{{ problema.unidad_medica }}</td>
+                    <td>{{ problema.categoria }}</td>
+                    <td>{{ problema.subcategoria }}</td>
+                    <td>
+                        <div class="tooltip">{{ problema.descripcion }}
+                            <span class="tooltiptext">{{ problema.descripcion }}</span>
+                        </div>
+                    </td>
+                    <td>{{ problema.estado }}</td>
+                    <td>{{ problema.nivel_riesgo }}</td>
+                    <td>{{ problema.actualizaciones | safe }}</td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center">No hay problemas reportados</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+    <footer class="text-center mt-4">
+        <p>Todos los derechos reservados - ISSSTE</p>
+    </footer>
+    <script>
+        document.getElementById('filterForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            cargarDatos();  // Llamar a cargarDatos cuando se cambie el estado para mostrar el mensaje de carga
+            var estado = document.getElementById('estado').value;
+            var categoria = document.getElementById('categoria').value;
+            fetch('/filtrar_datos_ajax', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `estado=${estado}&categoria=${categoria}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                var resultadosDiv = document.getElementById('resultadosFiltrados');
+                resultadosDiv.innerHTML = ''; // Limpiar resultados anteriores
+                var uniqueResults = new Set();
+                data.datos.forEach(d => {
+                    var key = `${d.nombre}-${d.problema}-${d.descripcion}`;
+                    if (!uniqueResults.has(key)) {
+                        uniqueResults.add(key);
+                        var div = document.createElement('div');
+                        div.innerHTML = `Nombre: ${d.nombre} - Problema: ${d.problema} - Descripción: ${d.descripcion}`;
+                        resultadosDiv.appendChild(div);
+                    }
+                });
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        function cargarDatos() {
+            var resultadosDiv = document.getElementById('resultadosFiltrados');
+            resultadosDiv.innerHTML = '<p>Cargando...</p>'; // Feedback de carga
+        }
+
+        var mymap = L.map('mapid').setView([23.634501, -102.552784], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(mymap);
+
+        var problemas = {{ problemas|tojson }};
+        var markerCluster = L.markerClusterGroup();
+
+        problemas.forEach(function(problema) {
+            if (problema.lat && problema.lon) {
+                var popupText = `
+                    <strong>Estado:</strong> ${problema.estado}<br>
+                    <strong>Unidad Médica:</strong> ${problema.unidad_medica}<br>
+                    <strong>Descripción:</strong> ${problema.descripcion}<br>
+                    <strong>Actualizaciones:</strong> ${problema.actualizaciones}
+                `;
+                var marker = L.marker([problema.lat, problema.lon]).bindPopup(popupText);
+                markerCluster.addLayer(marker);
+            }
+        });
+
+        mymap.addLayer(markerCluster);
+    </script>
+</body>
+</html>
+

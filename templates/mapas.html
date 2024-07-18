@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa de Sitios ISSSTE</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="/static/js/leaflet-kml.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #c4a142;
+            color: white;
+            text-align: center;
+            padding: 1em 0;
+            position: relative;
+        }
+        .container {
+            width: 80%;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #585656;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #a73f3f;
+            color: white;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #ddd;
+        }
+        a {
+            text-decoration: none;
+            color: #000000;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
+        #mapid {
+            height: 400px;
+            margin-bottom: 20px;
+        }
+        .search-container {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Mapa de Sitios ISSSTE</h1>
+        <div style="position: absolute; top: 10px; right: 20px;">
+            <a href="/dashboard" style="color: rgb(255, 255, 255); text-decoration: none; background-color: rgb(167, 87, 87); padding: 8px 15px; border-radius: 5px;">Regresar al Dashboard</a>
+        </div>
+    </header>
+    <div class="container">
+        <h2>Mapa</h2>
+        <div id="mapid"></div>
+        
+        <h2>Listado de Marcadores</h2>
+        <div class="search-container">
+            <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Buscar por unidad médica...">
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Latitud</th>
+                    <th>Longitud</th>
+                </tr>
+            </thead>
+            <tbody id="markers-list">
+                <!-- Los datos de los marcadores se agregarán aquí -->
+            </tbody>
+        </table>
+    </div>
+    <footer>
+        <p>Todos los derechos reservados - ISSSTE</p>
+    </footer>
+    <script>
+        var map = L.map('mapid').setView([23.634501, -102.552784], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        var customIcon = L.icon({
+            iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+            iconSize: [10, 16], // Cambiar el tamaño del marcador
+            iconAnchor: [5, 16]
+        });
+
+        fetch('/static/kml/sitios_issste.kml')
+            .then(response => response.text())
+            .then(kmlText => {
+                var parser = new DOMParser();
+                var kml = parser.parseFromString(kmlText, 'text/xml');
+                var track = new L.KML(kml);
+                map.addLayer(track);
+
+                var markersList = document.getElementById('markers-list');
+                track.eachLayer(function(layer) {
+                    if (layer instanceof L.Marker) {
+                        layer.setIcon(customIcon);
+                        var popupContent = layer.getPopup().getContent();
+                        var latlng = layer.getLatLng();
+                        var markerId = markersList.children.length + 1;
+
+                        // Agregar fila a la tabla
+                        var row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${markerId}</td>
+                            <td>${popupContent}</td>
+                            <td><a href="#" onclick="zoomToMarker(${latlng.lat}, ${latlng.lng})">${latlng.lat.toFixed(6)}</a></td>
+                            <td><a href="#" onclick="zoomToMarker(${latlng.lat}, ${latlng.lng})">${latlng.lng.toFixed(6)}</a></td>
+                        `;
+                        markersList.appendChild(row);
+                    }
+                });
+            })
+            .catch(error => console.error('Error al cargar el archivo KML:', error));
+
+        function zoomToMarker(lat, lng) {
+            map.setView([lat, lng], 15);
+        }
+
+        function filterTable() {
+            var input, filter, table, tr, td, i, j, txtValue;
+            input = document.getElementById('searchInput');
+            filter = input.value.toUpperCase();
+            table = document.getElementById('markers-list');
+            tr = table.getElementsByTagName('tr');
+
+            for (i = 0; i < tr.length; i++) {
+                var visible = false;
+                td = tr[i].getElementsByTagName('td');
+                for (j = 0; j < td.length; j++) {
+                    if (td[j]) {
+                        txtValue = td[j].textContent || td[j].innerText;
+                        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                            visible = true;
+                            break;
+                        }
+                    }
+                }
+                if (visible) {
+                    tr[i].style.display = '';
+                } else {
+                    tr[i].style.display = 'none';
+                }
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Problemas Solucionados</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="container">
+        <h1 class="text-center my-4">Problemas Solucionados</h1>
+        <table class="table table-bordered">
+            <thead class="thead-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Unidad Médica</th>
+                    <th>Categoría</th>
+                    <th>Subcategoría</th>
+                    <th>Descripción</th>
+                    <th>Estado</th>
+                    <th>Nivel de Riesgo</th>
+                    <th>Actualizaciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if problemas %}
+                {% for problema in problemas %}
+                <tr>
+                    <td>{{ problema.ticket_id }}</td>
+                    <td>{{ problema.unidad_medica }}</td>
+                    <td>{{ problema.categoria }}</td>
+                    <td>{{ problema.subcategoria }}</td>
+                    <td>{{ problema.descripcion }}</td>
+                    <td>{{ problema.estado }}</td>
+                    <td>{{ problema.nivel_riesgo }}</td>
+                    <td>{{ problema.actualizaciones }}</td>
+                </tr>
+                {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center">No hay problemas solucionados</td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+        <div class="text-center">
+            <a href="/dashboard" class="btn btn-primary">Volver al Dashboard</a>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Operativo - ISSSTE</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* Additional styles */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        header {
+            background-color: #9e213d;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        h1 {
+            margin: 0;
+        }
+
+        .container {
+            width: 90%;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+        }
+
+        button, input[type="submit"], a.button {
+            background-color: #a3092f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin-top: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            border-radius: 5px;
+        }
+
+        button:hover, input[type="submit"]:hover, a.button:hover {
+            background-color: #c4143d;
+        }
+
+        .form-input {
+            margin: 10px 0;
+            padding: 10px;
+            width: calc(100% - 22px);
+            display: block;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        @media (max-width: 768px) {
+            th, td {
+                font-size: 14px;
+                padding: 4px;
+            }
+
+            td button {
+                width: 100%;
+            }
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            padding-top: 100px;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgb(0, 0, 0);
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 10px;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover, .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer
+        }
+
+        .filter-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .filter-input {
+            padding: 8px;
+            width: calc(100% - 16px);
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Dashboard Operativo - ISSSTE</h1>
+    <div style="position: absolute; top: 10px; right: 20px;">
+        <a href="/logout" class="button">Cerrar Sesión</a>
+    </div>
+</header>
+<div class="container">
+    <button id="reportarProblemaBtn">Reportar Problema</button>
+
+    <div id="reportarProblemaModal" class="modal">
+        <div class="modal-content">
+            <span id="closeModal" class="close">&times;</span>
+            <h2>Reportar Problema</h2>
+            <form action="/reportar_problema" method="post">
+                <label for="estado">Estado:</label>
+                <input type="text" id="estado" name="estado" value="{{ session.state }}" readonly>
+                
+                <label for="unidad_medica">Unidad Médica:</label>
+                <select name="unidad_medica" id="unidad_medica" class="form-input">
+                    <option value="">Seleccione una Unidad Médica</option>
+                    {% for unidad in unidades_medicas %}
+                        <option value="{{ unidad }}">{{ unidad }}</option>
+                    {% endfor %}
+                </select>
+                
+                <label for="categoria_problema">Categoría del Problema:</label>
+                <select name="categoria_problema" id="categoria_problema" class="form-input" onchange="updateSubcategorias()">
+                    <option value="">Seleccione una Categoría</option>
+                    <option value="Infraestructura">Infraestructura</option>
+                    <option value="Personal">Personal</option>
+                    <option value="Insumos">Insumos</option>
+                    <option value="Servicios Auxiliares">Servicios Auxiliares</option>
+                    <option value="Otros">Otros</option>
+                </select>
+
+                <label for="subcategoria">Subcategoría:</label>
+                <select name="subcategoria" id="subcategoria" class="form-input">
+                    <option value="">Seleccione una Subcategoría</option>
+                </select>
+                
+                <label for="nivel_riesgo">Nivel de Riesgo:</label>
+                <select name="nivel_riesgo" id="nivel_riesgo" class="form-input">
+                    <option value="Bajo">Bajo</option>
+                    <option value="Moderado">Moderado</option>
+                    <option value="Alto">Alto</option>
+                    <option value="Crítico">Crítico</option>
+                </select>
+                
+                <label for="descripcion">Descripción:</label>
+                <textarea name="descripcion" id="descripcion" class="form-input"></textarea>
+                
+                <input type="hidden" name="fecha_hora" id="fecha_hora" value="">
+                <input type="submit" value="Reportar Problema">
+            </form>
+        </div>
+    </div>
+
+    <div class="filter-container">
+        <label for="filtroEstado">Filtrar por Estado:</label>
+        <input type="text" id="filtroEstado" class="filter-input" placeholder="Ingrese el estado para filtrar">
+    </div>
+
+    <h2>Problemas Reportados</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Unidad Médica</th>
+                <th>Categoría</th>
+                <th>Subcategoría</th>
+                <th>Descripción</th>
+                <th>Estado</th>
+                <th>Nivel de Riesgo</th>
+                <th>Fecha y Hora</th>
+                <th>Actualizaciones</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="problemasTable">
+            {% for problema in problemas %}
+            <tr>
+                <td>{{ problema.ticket_id }}</td>
+                <td>{{ problema.unidad_medica }}</td>
+                <td>{{ problema.categoria }}</td>
+                <td>{{ problema.subcategoria }}</td>
+                <td>{{ problema.descripcion }}</td>
+                <td>{{ problema.estado }}</td>
+                <td>{{ problema.nivel_riesgo }}</td>
+                <td>{{ problema.fecha_hora }}</td>
+                <td>{% if problema.actualizaciones %}{{ problema.actualizaciones }}{% else %}sin actualizaciones{% endif %}</td>
+                <td>
+                    <form action="/actualizar_ticket" method="post" style="display:inline;">
+                        <input type="hidden" name="ticket_id" value="{{ problema.ticket_id }}">
+                        <input type="text" name="nueva_actualizacion" placeholder="Escriba la actualización">
+                        <input type="hidden" name="fecha_hora_actualizacion" value="">
+                        <button type="submit">Actualizar</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<footer>
+    <p>Todos los derechos reservados - ISSSTE</p>
+</footer>
+
+<script>
+    const subcategorias = {
+        'Infraestructura': ['Remodelación', 'Inhabilitación', 'Construcción', 'Mantenimiento', 'Reparación', 'Electricidad', 'Plomería', 'Climatización', 'Otros'],
+        'Personal': ['Médico',         'Enfermería', 'Administrativo', 'Técnico', 'Servicios Generales', 'Seguridad', 'Limpieza', 'Capacitación', 'Otros'],
+        'Insumos': ['Medicamentos', 'Equipo Médico', 'Material de Curación', 'Material de Oficina', 'Material de Limpieza', 'Material de Laboratorio', 'Suministros Generales', 'Material Quirúrgico', 'Otros'],
+        'Servicios Auxiliares': ['Laboratorio', 'Rayos X', 'Farmacia', 'Nutrición', 'Psicología', 'Terapia Física', 'Ambulancias', 'Servicios Sociales', 'Medicina Nuclear', 'Otros'],
+        'Otros': ['Gestión de Residuos', 'Seguridad del Paciente', 'Gestión de Calidad', 'Comunicaciones', 'Informática', 'Atención al Paciente', 'Transporte', 'Gestión Administrativa']
+    };
+
+    function updateSubcategorias() {
+        const categoria = document.getElementById('categoria_problema').value;
+        const subcategoriaSelect = document.getElementById('subcategoria');
+        subcategoriaSelect.innerHTML = '<option value="">Seleccione una Subcategoría</option>';
+        if (subcategorias[categoria]) {
+            subcategorias[categoria].forEach(subcategoria => {
+                const option = document.createElement('option');
+                option.value = subcategoria;
+                option.textContent = subcategoria;
+                subcategoriaSelect.appendChild(option);
+            });
+        }
+    }
+
+    // Modal functionality
+    var modal = document.getElementById("reportarProblemaModal");
+    var btn = document.getElementById("reportarProblemaBtn");
+    var span = document.getElementById("closeModal");
+
+    btn.onclick = function() {
+        modal.style.display = "block";
+    }
+
+    span.onclick = function() {
+        modal.style.display = "none";
+    }
+
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+
+    // Filter functionality
+    document.getElementById('filtroEstado').addEventListener('input', function() {
+        var filter = this.value.toUpperCase();
+        var rows = document.getElementById("problemasTable").getElementsByTagName("tr");
+        
+        for (var i = 0; i < rows.length; i++) {
+            var td = rows[i].getElementsByTagName("td")[5]; // Estado column
+            if (td) {
+                var txtValue = td.textContent || td.innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    rows[i].style.display = "";
+                } else {
+                    rows[i].style.display = "none";
+                }
+            }       
+        }
+    });
+
+    // Set the current date and time for report and updates
+    function setCurrentDateTime(inputId) {
+        var now = new Date();
+        var formattedDate = now.getFullYear() + '-' +
+                            ('0' + (now.getMonth() + 1)).slice(-2) + '-' +
+                            ('0' + now.getDate()).slice(-2) + ' ' +
+                            ('0' + now.getHours()).slice(-2) + ':' +
+                            ('0' + now.getMinutes()).slice(-2) + ':' +
+                            ('0' + now.getSeconds()).slice(-2);
+        document.getElementById(inputId).value = formattedDate;
+    }
+
+    // Set current date and time when the modal is opened
+    btn.onclick = function() {
+        modal.style.display = "block";
+        setCurrentDateTime('fecha_hora');
+    }
+
+    // Set current date and time for updates
+    document.querySelectorAll('form[action="/actualizar_ticket"]').forEach(form => {
+        form.addEventListener('submit', function() {
+            setCurrentDateTime('fecha_hora_actualizacion');
+        });
+    });
+</script>
+</body>
+</html>
+

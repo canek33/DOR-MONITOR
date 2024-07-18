@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapeo de Elevadores - ISSSTE</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Mapeo de Elevadores - ISSSTE</h1>
+        <div style="position: absolute; top: 10px; right: 20px;">
+            <a href="/logout" style="color: white; text-decoration: none; background-color: rgb(116, 73, 73); padding: 8px 15px; border-radius: 5px;">Cerrar Sesión</a>
+        </div>
+        <div style="position: absolute; top: 10px; left: 20px;">
+            <a href="/dashboard" style="color: white; text-decoration: none; background-color: rgb(148, 35, 35); padding: 8px 15px; border-radius: 5px;">Volver al Dashboard</a>
+        </div>
+    </header>
+    <div class="container">
+        <h2>Filtrar Elevadores</h2>
+        <form id="filterForm">
+            <label for="marca">Marca del Elevador:</label>
+            <select name="marca" id="marca">
+                <option value="">Todas</option>
+                <option value="OTIS">OTIS</option>
+                <option value="KONE">KONE</option>
+                <option value="SCHINDLER">SCHINDLER</option>
+                <option value="MULTIMARCA">MULTIMARCA</option>
+                <option value="VERTIKA">VERTIKA</option>
+                <option value="MOVILIFT">MOVILIFT</option>
+                <option value="ORONA">ORONA</option>
+                <option value="BLT">BLT</option>
+                <option value="MITSUBISHI">MITSUBISHI</option>
+                <option value="DESCONOCIDO">DESCONOCIDO</option>
+                <option value="INTERLIFT">INTERLIFT</option>
+                <option value="MC PUARSA">MC PUARSA</option>
+            </select>
+            <input type="submit" value="Filtrar">
+        </form>
+
+        <button id="toggleHeatmap">Mostrar Mapa de Calor</button>
+        <button id="toggleOutOfService">Mostrar Fuera de Servicio</button>
+        <button id="toggleOriginalMap">Mostrar Mapa Original</button>
+
+        <div id="mapid" style="height: 600px;"></div>
+
+        <h2>Estadísticas de Elevadores</h2>
+        <canvas id="elevadorChart" width="400" height="200"></canvas>
+    </div>
+    <footer>
+        <p>Todos los derechos reservados - ISSSTE</p>
+    </footer>
+    <script>
+        var elevadores = {{ elevadores|tojson }};
+        var mymap = L.map('mapid').setView([23.6345, -102.5528], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(mymap);
+
+        var elevatorColors = {
+            'OTIS': 'blue',
+            'KONE': 'green',
+            'SCHINDLER': 'black',
+            'MULTIMARCA': 'red',
+            'VERTIKA': 'purple',
+            'MOVILIFT': 'cadetblue',
+            'ORONA': 'darkred',
+            'BLT': 'darkgreen',
+            'MITSUBISHI': 'darkblue',
+            'DESCONOCIDO': 'gray',
+            'INTERLIFT': 'lightgreen',
+            'MC PUARSA': 'lightblue'
+        };
+
+        var markerCluster = L.markerClusterGroup();
+        var currentHeatmap = null;
+
+        function addMarkers(elevadores) {
+            markerCluster.clearLayers();
+            elevadores.forEach(function(elevador) {
+                if (elevador.Latitud && elevador.Longitud) {
+                    var popupText = `
+                        <strong>Hospital:</strong> ${elevador.Unidad_Medica}<br>
+                        <strong>Tipo de elevador:</strong> ${elevador.Marca}<br>
+                        <strong>Tipo de uso:</strong> ${elevador.Uso}<br>
+                        <strong>Estado:</strong> ${elevador.Estado || 'Operativo'}<br>
+                        <strong>Número de pisos de parada:</strong> ${elevador.Paradas}<br>
+                        <form action="/marcar_elevador" method="POST">
+                            <input type="hidden" name="latitud" value="${elevador.Latitud}">
+                            <input type="hidden" name="longitud" value="${elevador.Longitud}">
+                            <label for="estado">Marcar como:</label>
+                            <select name="estado" onchange="this.form.submit()">
+                                <option value="Operativo" ${elevador.Estado === 'Operativo' ? 'selected' : ''}>Operativo</option>
+                                <option value="Fuera de Servicio" ${elevador.Estado === 'Fuera de Servicio' ? 'selected' : ''}>Fuera de Servicio</option>
+                                <option value="Sustitución" ${elevador.Estado === 'Sustitución' ? 'selected' : ''}>Sustitución</option>
+                                <option value="Siniestro" ${elevador.Estado === 'Siniestro' ? 'selected' : ''}>Siniestro</option>
+                                <option value="Baja de la Unidad" ${elevador.Estado === 'Baja de la Unidad' ? 'selected' : ''}>Baja de la Unidad</option>
+                            </select>
+                        </form>
+                    `;
+                    var marker = L.marker([elevador.Latitud, elevador.Longitud], {
+                        icon: L.icon({
+                            iconUrl: `https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png`,
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41],
+                            popupAnchor: [1, -34],
+                            shadowSize: [41, 41]
+                        })
+                    }).bindPopup(popupText);
+
+                    markerCluster.addLayer(marker);
+                }
+            });
+        }
+
+        function addHeatmap(elevadores) {
+            if (currentHeatmap) {
+                mymap.removeLayer(currentHeatmap);
+            }
+            var heatData = elevadores.map(function(elevador) {
+                return [elevador.Latitud, elevador.Longitud];
+            });
+            currentHeatmap = L.heatLayer(heatData, { radius: 25 }).addTo(mymap);
+        }
+
+        function addOutOfServiceMarkers(elevadores) {
+            markerCluster.clearLayers();
+            elevadores.filter(function(elevador) {
+                return elevador.Estado === 'Fuera de Servicio';
+            }).forEach(function(elevador) {
+                if (elevador.Latitud && elevador.Longitud) {
+                    var popupText = `
+                        <strong>Hospital:</strong> ${elevador.Unidad_Medica}<br>
+                        <strong>Tipo de elevador:</strong> ${elevador.Marca}<br>
+                        <strong>Tipo de uso:</strong> ${elevador.Uso}<br>
+                        <strong>Estado:</strong> ${elevador.Estado || 'Operativo'}<br>
+                        <strong>Número de pisos de parada:</strong> ${elevador.Paradas}
+                    `;
+                    var marker = L.marker([elevador.Latitud, elevador.Longitud], {
+                        icon: L.icon({
+                            iconUrl: `https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png`,
+                            iconSize: [25, 41],
+                            iconAnchor: [12, 41],
+                            popupAnchor: [1, -34],
+                            shadowSize: [41, 41]
+                        })
+                    }).bindPopup(popupText);
+
+                    markerCluster.addLayer(marker);
+                }
+            });
+        }
+
+        addMarkers(elevadores);
+        mymap.addLayer(markerCluster);
+
+                    function updateChart(data) {
+            var ctx = document.getElementById('elevadorChart').getContext('2d');
+            var labels = Object.keys(data);
+            var counts = Object.values(data);
+
+            var chart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Cantidad de Elevadores',
+                        data: counts,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function calculateStatistics(elevadores) {
+            var stats = elevadores.reduce((acc, elevador) => {
+                if (acc[elevador.Marca]) {
+                    acc[elevador.Marca]++;
+                } else {
+                    acc[elevador.Marca] = 1;
+                }
+                return acc;
+            }, {});
+
+            return stats;
+        }
+
+        var initialStats = calculateStatistics(elevadores);
+        updateChart(initialStats);
+
+        document.getElementById('filterForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            var marca = document.getElementById('marca').value;
+            var filteredElevadores = elevadores.filter(function(elevador) {
+                return marca === '' || elevador.Marca === marca;
+            });
+            addMarkers(filteredElevadores);
+            var stats = calculateStatistics(filteredElevadores);
+            updateChart(stats);
+        });
+
+        document.getElementById('toggleHeatmap').addEventListener('click', function() {
+            if (mymap.hasLayer(markerCluster)) {
+                mymap.removeLayer(markerCluster);
+                addHeatmap(elevadores);
+                mymap.addLayer(currentHeatmap);
+            } else {
+                mymap.removeLayer(currentHeatmap);
+                mymap.addLayer(markerCluster);
+            }
+        });
+
+        document.getElementById('toggleOutOfService').addEventListener('click', function() {
+            mymap.removeLayer(markerCluster);
+            if (currentHeatmap) {
+                mymap.removeLayer(currentHeatmap);
+            }
+            addOutOfServiceMarkers(elevadores);
+            mymap.addLayer(markerCluster);
+        });
+
+        document.getElementById('toggleOriginalMap').addEventListener('click', function() {
+            if (currentHeatmap) {
+                mymap.removeLayer(currentHeatmap);
+            }
+            mymap.removeLayer(markerCluster);
+            addMarkers(elevadores);
+            mymap.addLayer(markerCluster);
+        });
+    </script>
+</body>
+</html>

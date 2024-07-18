@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas - ISSSTE</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <header>
+        <h1>Estadísticas - ISSSTE</h1>
+        <div style="position: absolute; top: 10px; right: 20px;">
+            <a href="/dashboard" style="color: white; text-decoration: none; background-color: red; padding: 8px 15px; border-radius: 5px;">Regresar al Dashboard</a>
+        </div>
+    </header>
+    <div class="container">
+        <h2>Vista General</h2>
+        <div class="chart-container">
+            <canvas id="myChart"></canvas>
+        </div>
+        <h2>Problemas por Categoría</h2>
+        <div class="chart-container">
+            <canvas id="categoriaChart"></canvas>
+        </div>
+        <h2>Dispersión de Problemas</h2>
+        <div class="chart-container">
+            <canvas id="scatterChart"></canvas>
+        </div>
+    </div>
+    <footer>
+        <p>Todos los derechos reservados - ISSSTE</p>
+    </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/api/estadisticas')
+                .then(response => response.json())
+                .then(data => {
+                    // Gráfico de barras
+                    var ctx = document.getElementById('myChart').getContext('2d');
+                    var myChart = new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: ['Nuevos', 'No Solucionados', 'Solucionados', 'En Proceso'],
+                            datasets: [{
+                                label: '# de Problemas',
+                                data: data.problemas_por_estado,
+                                backgroundColor: [
+                                    'rgba(255, 99, 132, 0.2)',
+                                    'rgba(54, 162, 235, 0.2)',
+                                    'rgba(255, 206, 86, 0.2)',
+                                    'rgba(75, 192, 192, 0.2)'
+                                ],
+                                borderColor: [
+                                    'rgba(255, 99, 132, 1)',
+                                    'rgba(54, 162, 235, 1)',
+                                    'rgba(255, 206, 86, 1)',
+                                    'rgba(75, 192, 192, 1)'
+                                ],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                y: {
+                                    beginAtZero: true
+                                }
+                            }
+                        }
+                    });
+
+                    // Gráfico de dispersión
+                    var scatterCtx = document.getElementById('scatterChart').getContext('2d');
+                    var scatterChart = new Chart(scatterCtx, {
+                        type: 'scatter',
+                        data: {
+                            datasets: [{
+                                label: 'Problemas por Estado y Nivel de Riesgo',
+                                data: data.problemas_scatter,
+                                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                x: {
+                                    type: 'category',
+                                    labels: data.problemas_scatter.map(d => d.x),
+                                    title: {
+                                        display: true,
+                                        text: 'Estado'
+                                    }
+                                },
+                                y: {
+                                    beginAtZero: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Nivel de Riesgo'
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    // Gráfico de categorías
+                    var categoriaCtx = document.getElementById('categoriaChart').getContext('2d');
+                    var categoriaChart = new Chart(categoriaCtx, {
+                        type: 'pie',
+                        data: {
+                            labels: data.problemas_por_categoria.labels,
+                            datasets: [{
+                                label: 'Problemas por Categoría',
+                                data: data.problemas_por_categoria.data,
+                                backgroundColor: [
+                                    'rgba(255, 99, 132, 0.2)',
+                                    'rgba(54, 162, 235, 0.2)',
+                                    'rgba(255, 206, 86, 0.2)',
+                                    'rgba(75, 192, 192, 0.2)',
+                                    'rgba(153, 102, 255, 0.2)',
+                                    'rgba(255, 159, 64, 0.2)'
+                                ],
+                                borderColor: [
+                                    'rgba(255, 99, 132, 1)',
+                                    'rgba(54, 162, 235, 1)',
+                                    'rgba(255, 206, 86, 1)',
+                                    'rgba(75, 192, 192, 1)',
+                                    'rgba(153, 102, 255, 1)',
+                                    'rgba(255, 159, 64, 1)'
+                                ],
+                                borderWidth: 1
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(tooltipItem) {
+                                            return tooltipItem.label + ': ' + tooltipItem.raw;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                })
+                .catch(error => console.error('Error fetching statistics data:', error));
+        });
+    </script>
+</body>
+</html>
+
