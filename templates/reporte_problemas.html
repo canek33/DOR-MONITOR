@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reporte de Problemas</title>
+    <link rel="stylesheet" href="/static/css/reporte_problemas.css">
+    <style>
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        header h1 {
+            margin-bottom: 10px;
+        }
+        .btn-regresar {
+            margin-bottom: 30px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Reporte de Problemas</h1>
+        <a href="/dashboard" class="btn btn-primary btn-regresar">Regresar al Dashboard</a>
+    </header>
+    <main>
+        <section>
+            <h2>Problemas Solucionados</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Unidad Médica</th>
+                        <th>Descripción</th>
+                        <th>Fecha y Hora</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for problema in problemas if problema.estado_problema == 'Solucionado' %}
+                    <tr>
+                        <td>{{ problema.ticket_id }}</td>
+                        <td>{{ problema.unidad_medica }}</td>
+                        <td>{{ problema.descripcion }}</td>
+                        <td>{{ problema.fecha_hora }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+        <section>
+            <h2>Problemas No Solucionados</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Unidad Médica</th>
+                        <th>Descripción</th>
+                        <th>Fecha y Hora</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for problema in problemas if problema.estado_problema == 'No Solucionado' %}
+                    <tr>
+                        <td>{{ problema.ticket_id }}</td>
+                        <td>{{ problema.unidad_medica }}</td>
+                        <td>{{ problema.descripcion }}</td>
+                        <td>{{ problema.fecha_hora }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+        <section>
+            <h2>Problemas En Proceso</h2>
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Unidad Médica</th>
+                        <th>Descripción</th>
+                        <th>Fecha y Hora</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for problema in problemas if problema.estado_problema == 'En Proceso' %}
+                    <tr>
+                        <td>{{ problema.ticket_id }}</td>
+                        <td>{{ problema.unidad_medica }}</td>
+                        <td>{{ problema.descripcion }}</td>
+                        <td>{{ problema.fecha_hora }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </section>
+    </main>
+    <footer>
+        <p>ISSSTE - Todos los derechos reservados</p>
+    </footer>
+</body>
+</html>

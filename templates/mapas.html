@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa Unidades ISSSTE</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="/static/js/leaflet-kml.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-image: url('/static/images/ISSSTE_FONDO_BLANCO.jpg');
+            background-size: cover;
+            background-attachment: fixed;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        header {
+            background-color: #691C32;
+            color: white;
+            text-align: center;
+            padding: 1em 0;
+            position: relative;
+        }
+        .container {
+            width: 80%;
+            margin: 20px auto;
+            background: rgba(255, 255, 255, 0.9); /* Fondo blanco con transparencia */
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+        }
+        h1, h2 {
+            color: #691C32;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: rgba(111, 114, 113, 0.8);
+            color: #333;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #BC9SSC;
+            color: white;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+        tr:hover {
+            background-color: rgba(111, 114, 113, 0.5);
+        }
+        a {
+            text-decoration: none;
+            color: #691C32;
+        }
+        a:hover {
+            color: #BC9SSC;
+        }
+        #mapid {
+            height: 400px;
+            margin-bottom: 20px;
+            border: 2px solid #BC9SSC;
+            border-radius: 10px;
+        }
+        .search-container {
+            margin-bottom: 20px;
+        }
+        .btn-zoom-out {
+            display: none;
+            margin: 20px 0;
+            padding: 10px 20px;
+            background-color: #691C32;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .btn-zoom-out:hover {
+            background-color: #BC9SSC;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Mapa Unidades ISSSTE</h1>
+        <div style="position: absolute; top: 10px; right: 20px;">
+            <a href="/dashboard" style="color: rgb(255, 255, 255); text-decoration: none; background-color: rgb(167, 87, 87); padding: 8px 15px; border-radius: 5px;">Regresar al Dashboard</a>
+        </div>
+    </header>
+    <div class="container">
+        <h2 class="text-center">Mapa ISSSTE</h2>
+        <div id="mapid"></div>
+        <button id="btnZoomOut" class="btn-zoom-out" onclick="zoomOut()">Alejar Mapa</button>
+        
+        <h2 class="text-center">Listado de Marcadores</h2>
+        <div class="search-container">
+            <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Buscar por unidad médica..." style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc;">
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                </tr>
+            </thead>
+            <tbody id="markers-list">
+                <!-- Los datos de los marcadores se agregarán aquí -->
+            </tbody>
+        </table>
+    </div>
+    <footer style="text-align: center; padding: 10px; background-color: #691C32; color: white;">
+        <p>Todos los derechos reservados - ISSSTE</p>
+    </footer>
+    <script>
+        var map = L.map('mapid').setView([23.634501, -102.552784], 5);
+        var initialZoom = map.getZoom();
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(map);
+
+        var customIcon = L.icon({
+            iconUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-icon.png',
+            iconSize: [15, 25], // Tamaño reducido del marcador
+            iconAnchor: [7.5, 25]
+        });
+
+        fetch('/static/kml/sitios_issste.kml')
+            .then(response => response.text())
+            .then(kmlText => {
+                var parser = new DOMParser();
+                var kml = parser.parseFromString(kmlText, 'text/xml');
+                var track = new L.KML(kml);
+                map.addLayer(track);
+
+                var markersList = document.getElementById('markers-list');
+                track.eachLayer(function(layer) {
+                    if (layer instanceof L.Marker) {
+                        layer.setIcon(customIcon);
+                        var popupContent = layer.getPopup().getContent();
+                        var latlng = layer.getLatLng();
+                        var markerId = markersList.children.length + 1;
+
+                        // Agregar fila a la tabla
+                        var row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${markerId}</td>
+                            <td><a href="#" onclick="zoomToMarker(${latlng.lat}, ${latlng.lng})">${popupContent}</a></td>
+                        `;
+                        markersList.appendChild(row);
+                    }
+                });
+            })
+            .catch(error => console.error('Error al cargar el archivo KML:', error));
+
+        function zoomToMarker(lat, lng) {
+            map.setView([lat, lng], 15);
+            document.getElementById('btnZoomOut').style.display = 'block';
+        }
+
+        function zoomOut() {
+            map.setView([23.634501, -102.552784], initialZoom);
+            document.getElementById('btnZoomOut').style.display = 'none';
+        }
+
+        function filterTable() {
+            var input, filter, table, tr, td, i, txtValue;
+            input = document.getElementById('searchInput');
+            filter = input.value.toUpperCase();
+            table = document.getElementById('markers-list');
+            tr = table.getElementsByTagName('tr');
+
+            for (i = 0; i < tr.length; i++) {
+                td = tr[i].getElementsByTagName('td');
+                if (td) {
+                    txtValue = td[1].textContent || td[1].innerText;
+                    if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                        tr[i].style.display = '';
+                    } else {
+                        tr[i].style.display = 'none';
+                    }
+                }       
+            }
+        }
+    </script>
+</body>
+</html>

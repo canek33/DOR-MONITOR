@@ -1,0 +1,98 @@
+/* Archivo: static/css/style.css */
+body {
+    font-family: 'Arial', sans-serif;
+    background: url('/static/images/ISSSTE_PPT_plantilla_2024.jpg') no-repeat center center fixed;
+    background-size: cover;
+    margin: 0;
+    padding: 0;
+    color: #333;
+}
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Usar toda la altura de la ventana */
+}
+
+.login-box {
+    background-color: rgba(188, 149, 92, 0.4); /* Color de fondo transparente */
+    padding: 20px;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    width: 300px;
+    border-radius: 8px;
+    text-align: center;
+    animation: fadeIn 1s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+h2 {
+    color: r#9e7c53;
+    margin-bottom: 20px;
+}
+
+.input-group {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    color: white;
+}
+
+.form-input {
+    margin: 10px 0;
+    padding: 10px;
+    width: calc(100% - 22px);
+    display: block;
+    background-color: rgba(152, 152, 154, 0.1); /* Caja de texto transparente */
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    color: white;
+}
+
+.toggle-password {
+    position: absolute;
+    right: 10px;
+    top: 35px;
+    cursor: pointer;
+    color: white;
+}
+
+input[type="submit"] {
+    background-color: #a3092f;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin-top: 10px;
+    cursor: pointer;
+    border-radius: 5px;
+}
+
+input[type="submit"]:hover {
+    background-color: #c4143d;
+}
+
+.recover-link {
+    display: block;
+    margin-top: 10px;
+    color: white;
+    text-decoration: none;
+}
+
+.recover-link:hover {
+    text-decoration: underline;
+}
+
+footer {
+    text-align: center;
+    padding: 20px 0;
+    background-color: #ffffff;
+    color: #8a656e;
+}

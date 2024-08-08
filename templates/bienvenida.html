@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenida - ISSSTE - DOR</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        body {
+            background-image: url('/static/images/ISSSTE_FONDO_CREMA.jpg');
+            background-attachment: fixed;
+            background-size: cover;
+            background-position: center;
+            font-family: 'Montserrat', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .welcome-container {
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 90%;
+            margin: 20px;
+        }
+        .welcome-container h1 {
+            color: #691C32;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+            font-weight: 700;
+        }
+        .welcome-container h2 {
+            color: #691C32;
+            margin-bottom: 30px;
+            font-size: 1.5rem;
+            font-weight: 400;
+        }
+        .welcome-container a {
+            display: inline-block;
+            background-color: #691C32;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 700;
+            transition: background-color 0.3s ease;
+        }
+        .welcome-container a:hover {
+            background-color: #BC955C;
+        }
+    </style>
+</head>
+<body>
+    <div class="welcome-container" role="main">
+        <h1>{{ welcome_message }}</h1>
+        <h2>{{ username }}</h2>
+        <a href="{{ url_for('dashboard') }}" aria-label="Ir al dashboard">Ir al Dashboard</a>
+    </div>
+</body>
+</html>

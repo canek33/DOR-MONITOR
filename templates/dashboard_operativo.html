@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Operativo - ISSSTE</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* Additional styles */
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        header {
+            background-color: #9e213d;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .container {
+            width: 90%;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+        }
+
+        button, input[type="submit"], a.button {
+            background-color: #a3092f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin-top: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button:hover, input[type="submit"]:hover, a.button:hover {
+            background-color: #c4143d;
+        }
+
+        .form-input {
+            margin: 10px 0;
+            padding: 12px;
+            width: calc(100% - 24px);
+            display: block;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+            color: black;
+            background-color: white;
+            font-size: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+
+        .table-container {
+            width: 100%;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        @media (max-width: 768px) {
+            th, td {
+                font-size: 14px;
+                padding: 4px;
+            }
+
+            td button {
+                width: 100%;
+            }
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding-top: 50px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 30px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            border-radius: 10px;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover, .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .filter-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .filter-input {
+            padding: 8px;
+            width: calc(100% - 16px);
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        /* Estilos para el select */
+        select.form-input {
+            background-color: #6F7271;
+            color: white;
+        }
+
+        select.form-input option {
+            background-color: white;
+            color: black;
+        }
+
+        /* Estilo del mensaje de bienvenida */
+        .welcome-message {
+            background-color: #BC955C;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* Estilos adicionales para el textarea */
+        textarea.form-input {
+            color: black;
+            background-color: white;
+        }
+
+        footer {
+    background-color: #BC955C;
+    color: #fff;
+    padding: 3px; /* Reduce el padding para hacer el footer más pequeño */
+    text-align: center;
+    width: 100%; /* Ajusta el ancho para que ocupe todo el contenedor */
+    box-sizing: border-box;
+    font-size: 12px; /* Tamaño de fuente más pequeño */
+}
+
+
+        /* Enlace para ticket_id */
+        .ticket-id-link {
+            color: #BC955C;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .ticket-id-link:hover {
+            color: #9E7B4F;
+        }
+
+        /* Estilo especial para el cuadro de estado */
+        .estado-cuadro {
+            background-color: #F0F0F0;
+            border: 1px solid #CCC;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+
+/* Estilo especial para las actualizaciones */
+.actualizaciones {
+    white-space: pre-wrap;
+}
+        
+    </style>
+</head>
+<body>
+<header>
+    <h1>Dashboard Operativo - ISSSTE</h1>
+    <div style="position: absolute; top: 10px; right: 20px;">
+        <a href="/logout" class="button">Cerrar Sesión</a>
+    </div>
+</header>
+<div class="container">
+    {% if welcome_message %}
+        <div class="welcome-message">
+            {{ welcome_message }}
+        </div>
+    {% endif %}
+    <button id="reportarProblemaBtn">Reportar Problema</button>
+
+    <div id="reportarProblemaModal" class="modal">
+        <div class="modal-content">
+            <span id="closeModal" class="close">&times;</span>
+            <h2>Reportar Problema</h2>
+            <form action="/reportar_problema" method="post" enctype="multipart/form-data">
+                <label for="estado">Estado:</label>
+                <div class="estado-cuadro">{{ estado_asignado }}</div> <!-- Cuadro de estado con estilo especial -->
+                <input type="hidden" name="estado" value="{{ estado_asignado }}">
+            
+                <label for="unidad_medica">Unidad Médica:</label>
+                <select name="unidad_medica" id="unidad_medica" class="form-input" required>
+                    <option value="">Seleccione una Unidad Médica</option>
+                    {% for unidad in unidades_medicas %}
+                        <option value="{{ unidad }}">{{ unidad }}</option>
+                    {% endfor %}
+                </select>
+            
+                <label for="categoria_problema">Categoría del Problema:</label>
+                <select name="categoria_problema" id="categoria_problema" class="form-input" onchange="updateSubcategorias()" required>
+                    <option value="">Seleccione una Categoría</option>
+                    <option value="Infraestructura">Infraestructura</option>
+                    <option value="Personal">Personal</option>
+                    <option value="Insumos">Insumos</option>
+                    <option value="Servicios Auxiliares">Servicios Auxiliares</option>
+                    <option value="Otros">Otros</option>
+                </select>
+            
+                <label for="subcategoria">Subcategoría:</label>
+                <select name="subcategoria" id="subcategoria" class="form-input" required>
+                    <option value="">Seleccione una Subcategoría</option>
+                </select>
+            
+                <label for="nivel_riesgo">Nivel de Riesgo:</label>
+                <select name="nivel_riesgo" id="nivel_riesgo" class="form-input" required>
+                    <option value="Bajo">Bajo</option>
+                    <option value="Moderado">Moderado</option>
+                    <option value="Alto">Alto</option>
+                    <option value="Crítico">Crítico</option>
+                </select>
+            
+                <label for="descripcion">Descripción:</label>
+                <textarea name="descripcion" id="descripcion" class="form-input" placeholder="Describe brevemente el problema" required></textarea>
+            
+                <label for="nombre_reportante">Nombre de quien reporta:</label>
+                <input type="text" id="nombre_reportante" name="nombre_reportante" class="form-input" placeholder="Anota el nombre de quien reporta" required>
+            
+                <label for="responsable_problema">Responsable del problema:</label>
+                <select name="responsable_problema" id="responsable_problema" class="form-input" required>
+                    <option value="">Selecciona una área responsable</option>
+                    <option value="Administración">Administración</option>
+                    <option value="Médica">Médica</option>
+                    <option value="UADyS">UADyS</option>
+                    <option value="Prestaciones">Prestaciones</option>
+                    <option value="Jurídico">Jurídico</option>
+                </select>
+            
+                <label for="correo_electronico">Correo electrónico:</label>
+                <input type="email" id="correo_electronico" name="correo_electronico" class="form-input" placeholder="Anota el correo electrónico de quien reporta" required>
+                
+                <label for="archivo">Archivo Adjunto:</label>
+                <input type="file" id="archivo" name="archivo" class="form-input">
+                
+                <input type="hidden" name="fecha_hora" id="fecha_hora" value="">
+                <input type="submit" value="Reportar Problema">
+            </form> 
+        </div>
+    </div>
+
+    <div class="filter-container">
+        <label for="filtroUnidadMedica">Filtrar por Unidad Médica:</label>
+        <input type="text" id="filtroUnidadMedica" class="filter-input" placeholder="Ingrese la Unidad Médica para filtrar">
+    </div>
+
+    <h2>Problemas Reportados</h2>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Ticket ID</th>
+                    <th>Unidad Médica</th>
+                    <th>Descripción</th>
+                    <th>Estado</th>
+                    <th>Actualizaciones</th>
+                </tr>
+            </thead>
+            <tbody id="problemasTable">
+                {% for problema in problemas %}
+                <tr>
+                    <td class="ticket-id-link" data-ticket="{{ problema.ticket_id }}">{{ problema.ticket_id }}</td>
+                    <td>{{ problema.unidad_medica }}</td>
+                    <td>{{ problema.descripcion }}</td>
+                    <td>{{ problema.aceptado if problema.aceptado else 'Pendiente' }}</td>
+                    <td class="actualizaciones">{% if problema.actualizaciones %}{{ problema.actualizaciones | replace('\n', '<br>') | safe }}{% else %}Sin actualizaciones{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal para ver detalles del problema -->
+<div id="detalleProblemaModal" class="modal">
+    <div class="modal-content">
+        <span id="closeDetalleModal" class="close">&times;</span>
+        <h2>Detalles del Problema</h2>
+        <div id="detalleContenido">
+            <!-- Los detalles del problema se llenarán aquí dinámicamente -->
+        </div>
+        <h3>Actualizar Problema</h3>
+        <form action="/actualizar_ticket" method="post" enctype="multipart/form-data">
+            <input type="hidden" id="detalleTicketId" name="ticket_id">
+            
+            <label for="numero_empleado">Número de Empleado:</label>
+            <input type="text" id="numero_empleado" name="numero_empleado" class="form-input" required oninput="fetchEmployeeDetails(this.value)">
+            <small>Ingrese su número de empleado para autenticar la actualización.</small>
+            
+            <label for="nombre_empleado">Nombre del Empleado:</label>
+            <input type="text" id="nombre_empleado" name="nombre_empleado" class="form-input" readonly>
+            <small>Este campo se llenará automáticamente basado en el número de empleado.</small>
+            
+            <label for="puesto_empleado">Puesto del Empleado:</label>
+            <input type="text" id="puesto_empleado" name="puesto_empleado" class="form-input" readonly>
+            <small>Este campo se llenará automáticamente basado en el número de empleado.</small>
+            
+            <label for="nueva_actualizacion">Nueva Actualización:</label>
+            <textarea name="nueva_actualizacion" id="nueva_actualizacion" class="form-input" placeholder="Ingrese los detalles de la actualización" required></textarea>
+            
+            <label for="archivo">Archivo Adjunto:</label>
+            <input type="file" id="archivo" name="archivo" class="form-input">
+            
+            <input type="hidden" name="fecha_hora_actualizacion" id="fecha_hora_actualizacion">
+            <input type="submit" value="Actualizar">
+        </form>
+    </div>
+</div>
+
+<footer>
+    <p>Todos los derechos reservados - ISSSTE</p>
+</footer>
+
+<script>
+    // Definir las subcategorías para cada categoría
+    const subcategorias = {
+        'Infraestructura': ['Remodelación', 'Inhabilitación', 'Construcción', 'Mantenimiento', 'Reparación', 'Electricidad', 'Plomería', 'Climatización', 'Otros'],
+        'Personal': ['Médico', 'Enfermería', 'Administrativo', 'Técnico', 'Servicios Generales', 'Seguridad', 'Limpieza', 'Capacitación', 'Otros'],
+        'Insumos': ['Medicamentos', 'Equipo Médico', 'Material de Curación', 'Material de Oficina', 'Material de Limpieza', 'Material de Laboratorio', 'Suministros Generales', 'Material Quirúrgico', 'Otros'],
+        'Servicios Auxiliares': ['Laboratorio', 'Rayos X', 'Farmacia', 'Nutrición', 'Psicología', 'Terapia Física', 'Ambulancias', 'Servicios Sociales', 'Medicina Nuclear', 'Otros'],
+        'Otros': ['Gestión de Residuos', 'Seguridad del Paciente', 'Gestión de Calidad', 'Comunicaciones', 'Informática', 'Atención al Paciente', 'Transporte', 'Gestión Administrativa']
+    };
+
+    // Actualizar las subcategorías en función de la categoría seleccionada
+    function updateSubcategorias() {
+        const categoria = document.getElementById('categoria_problema').value;
+        const subcategoriaSelect = document.getElementById('subcategoria');
+        subcategoriaSelect.innerHTML = '<option value="">Seleccione una Subcategoría</option>';
+        if (subcategorias[categoria]) {
+            subcategorias[categoria].forEach(subcategoria => {
+                const option = document.createElement('option');
+                option.value = subcategoria;
+                option.textContent = subcategoria;
+                subcategoriaSelect.appendChild(option);
+            });
+        }
+    }
+
+    // Funcionalidad del modal para reportar problema
+    var modal = document.getElementById("reportarProblemaModal");
+    var btn = document.getElementById("reportarProblemaBtn");
+    var span = document.getElementById("closeModal");
+
+    btn.onclick = function() {
+        modal.style.display = "block";
+        setCurrentDateTime('fecha_hora');
+    }
+
+    span.onclick = function() {
+        modal.style.display = "none";
+    }
+
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+
+    // Funcionalidad del modal para ver detalles del problema
+    var detalleModal = document.getElementById("detalleProblemaModal");
+    var closeDetalleModal = document.getElementById("closeDetalleModal");
+
+    closeDetalleModal.onclick = function() {
+        detalleModal.style.display = "none";
+    }
+
+    window.onclick = function(event) {
+        if (event.target == detalleModal) {
+            detalleModal.style.display = "none";
+        }
+    }
+
+    // Asignar evento de click a los enlaces de los tickets
+    document.querySelectorAll('.ticket-id-link').forEach(item => {
+        item.addEventListener('click', event => {
+            const ticketId = event.target.getAttribute('data-ticket');
+            // Llamar al servidor para obtener los detalles del problema
+            $.ajax({
+                url: `/get_problem_details/${ticketId}`,
+                method: 'GET',
+                success: function(data) {
+                    showProblemDetails(data);
+                },
+                error: function() {
+                    alert('Error al cargar los detalles del problema.');
+                }
+            });
+        });
+    });
+
+    function showProblemDetails(details) {
+        const actualizaciones = details.actualizaciones ? details.actualizaciones.split('\n').map(line => `<p>${line}</p>`).join('') : "Sin Actualizaciones";
+        const contenido = `
+            <p><strong>Ticket ID:</strong> ${details.ticket_id}</p>
+            <p><strong>Unidad Médica:</strong> ${details.unidad_medica}</p>
+            <p><strong>Descripción:</strong> ${details.descripcion}</p>
+            <p><strong>Estado:</strong> ${details.aceptado}</p>
+            <p><strong>Actualizaciones:</strong> ${actualizaciones}</p>
+            <p><strong>Nivel de Riesgo:</strong> ${details.nivel_riesgo}</p>
+            <p><strong>Fecha y Hora:</strong> ${details.fecha_hora}</p>
+            <p><strong>Nombre de quien reporta:</strong> ${details.nombre_reportante}</p>
+            <p><strong>Responsable del problema:</strong> ${details.responsable_problema}</p>
+            <p><strong>Correo electrónico:</strong> ${details.correo_electronico}</p>
+            <p><strong>Archivo Adjunto:</strong> ${details.archivo ? `<a href="/uploads/${details.archivo}" target="_blank">${details.archivo}</a>` : 'No hay archivo adjunto'}</p>
+        `;
+        document.getElementById('detalleContenido').innerHTML = contenido;
+        document.getElementById('detalleTicketId').value = details.ticket_id;
+        detalleModal.style.display = "block";
+    }
+
+    // Funcionalidad de filtro
+    document.getElementById('filtroUnidadMedica').addEventListener('input', function() {
+        var filter = this.value.toUpperCase();
+        var rows = document.getElementById("problemasTable").getElementsByTagName("tr");
+
+        for (var i = 0; i < rows.length; i++) {
+            var td = rows[i].getElementsByTagName("td")[1]; // Unidad Médica column
+            if (td) {
+                var txtValue = td.textContent || td.innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    rows[i].style.display = "";
+                } else {
+                    rows[i].style.display = "none";
+                }
+            }
+        }
+    });
+
+    // Función para establecer la fecha y hora actual en los campos de fecha y hora
+    function setCurrentDateTime(inputId) {
+        var now = new Date();
+        var formattedDate = now.getFullYear() + '-' +
+                            ('0' + (now.getMonth() + 1)).slice(-2) + '-' +
+                            ('0' + now.getDate()).slice(-2) + ' ' +
+                            ('0' + now.getHours()).slice(-2) + ':' +
+                            ('0' + now.getMinutes()).slice(-2) + ':' +
+                            ('0' + now.getSeconds()).slice(-2);
+        document.getElementById(inputId).value = formattedDate;
+    }
+
+    // Establecer la fecha y hora actual cuando se abre el modal para reportar problema
+    btn.onclick = function() {
+        modal.style.display = "block";
+        setCurrentDateTime('fecha_hora');
+    }
+
+    // Establecer la fecha y hora actual para las actualizaciones en el modal de detalles
+    document.querySelectorAll('form[action="/actualizar_ticket"]').forEach(form => {
+        form.addEventListener('submit', function() {
+            setCurrentDateTime('fecha_hora_actualizacion');
+        });
+    });
+
+    // Obtener detalles del empleado basado en el número de empleado
+    function fetchEmployeeDetails(numeroEmpleado) {
+        if (numeroEmpleado) {
+            $.ajax({
+                url: `/get_employee_details/${numeroEmpleado}`,
+                method: 'GET',
+                success: function(data) {
+                    if (data.nombre && data.puesto) {
+                        document.getElementById('nombre_empleado').value = data.nombre;
+                        document.getElementById('puesto_empleado').value = data.puesto;
+                    } else {
+                        document.getElementById('nombre_empleado').value = '';
+                        document.getElementById('puesto_empleado').value = '';
+                    }
+                },
+                error: function() {
+                    document.getElementById('nombre_empleado').value = '';
+                    document.getElementById('puesto_empleado').value = '';
+                }
+            });
+        } else {
+            document.getElementById('nombre_empleado').value = '';
+            document.getElementById('puesto_empleado').value = '';
+        }
+    }
+</script>
+</body>
+</html>"

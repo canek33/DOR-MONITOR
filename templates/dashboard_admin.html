@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Admin - {{ username }}</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="/static/css/dashboard_admin.css">
+    <style>
+        body {
+            background-image: url('/static/images/ISSSTE_FONDO_BLANCO.jpg');
+            background-attachment: fixed;
+            background-size: cover;
+            background-position: center;
+            font-family: Arial, sans-serif;
+        }
+        header {
+            background-color: #691C32;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+            position: relative;
+        }
+        header h1 {
+            margin: 0;
+        }
+        header a {
+            color: white;
+            text-decoration: none;
+            background-color: rgb(148, 35, 35);
+            padding: 8px 15px;
+            border-radius: 5px;
+            position: absolute;
+            top: 10px;
+        }
+        header a.logout {
+            right: 20px;
+        }
+        .container {
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        h2 {
+            color: #691C32;
+            font-size: 1.5rem;
+            text-align: center;
+        }
+        .btn-custom {
+            background-color: #BC955C;
+            color: white;
+            border: none;
+            margin: 5px 0;
+        }
+        .btn-custom:hover {
+            background-color: #9E7C53;
+        }
+        .sidebar {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 1;
+            top: 0;
+            left: 0;
+            background-color: rgba(0, 0, 0, 0.7);
+            overflow-x: hidden;
+            transition: 0.5s;
+            padding-top: 60px;
+        }
+        .sidebar a {
+            padding: 10px 15px;
+            text-decoration: none;
+            font-size: 1.2rem;
+            color: white;
+            display: block;
+            transition: 0.3s;
+        }
+        .sidebar a:hover {
+            color: #f1f1f1;
+        }
+        .sidebar .closebtn {
+            position: absolute;
+            top: 0;
+            right: 25px;
+            font-size: 36px;
+            margin-left: 50px;
+        }
+        .openbtn {
+            font-size: 20px;
+            cursor: pointer;
+            background-color: #691c32;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            position: relative;
+            top: 20px;
+        }
+        .openbtn:hover {
+            background-color: #444;
+        }
+        #main {
+            transition: margin-left .5s;
+            padding: 16px;
+        }
+        .table-responsive {
+            display: flex;
+            justify-content: center;
+        }
+        .table {
+            width: auto;
+            margin: 0 auto;
+            font-size: 1rem;
+            border-spacing: 0 5px; /* Espaciado entre filas */
+        }
+        .table th, .table td {
+            border: 1px solid #ddd;
+            border-collapse: separate;
+            padding: 0.5rem;
+            text-align: center;
+            border-radius: 5px; /* Bordes redondeados */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Sombra */
+        }
+        .table th {
+            background-color: #f4f4f4;
+        }
+        .table td {
+            background-color: white;
+        }
+        .descripcion-col, .actualizaciones-col {
+            max-width: 150px;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+        .parpadeo-verde {
+            color: green;
+            animation: blink-green 2s infinite;
+        }
+        @keyframes blink-green {
+            50% {
+                opacity: 0;
+            }
+        }
+        .map-container {
+            width: 80%;
+            margin: 0 auto;
+            border: 2px solid #691C32;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        #mapid {
+            height: 500px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Dashboard Admin - {{ username }}</h1>
+        <a href="/logout" class="logout">Cerrar Sesión</a>
+    </header>
+    <div id="mySidebar" class="sidebar">
+        <a href="javascript:void(0)" class="closebtn" onclick="closeNav()">&times;</a>
+        <a href="/estadisticas">Ver Estadísticas</a>
+        <a href="/mapas">Ver Mapa</a>
+        <a href="/elevadores">Ver Mapa de Elevadores</a>
+        <a href="/aires">Ver Mapa de Aires</a>
+        <a href="/gestionar_usuarios">Gestionar Usuarios</a>
+        <a href="/problemas_solucionados" class="btn btn-success mx-1">Problemas Solucionados</a>
+        <a href="/problemas_no_solucionados" class="btn btn-danger mx-1">Problemas No Solucionados</a>
+        <a href="/problemas_en_proceso" class="btn btn-warning mx-1">Problemas En Proceso</a>
+        <a href="/reporte_problemas" class="btn btn-info mx-1">Ver Reporte de Problemas</a>
+    </div>
+    <div id="main">
+        <button class="openbtn" onclick="openNav()">&#9776; Menú</button>
+        <div class="d-flex justify-content-end mb-3">
+            <a href="/generate_report_pdf" class="btn btn-primary">Generar Reporte PDF</a>
+        </div>
+        <h2 class="mt-4">Mapa de la República Mexicana</h2>
+        <div class="map-container mb-4">
+            <div id="mapid"></div>
+        </div>
+        <h2>Filtrar Información</h2>
+        <form id="filterForm" class="mb-4">
+            <div class="form-row justify-content-center">
+                <div class="form-group col-md-4">
+                    <label for="estado">Estado:</label>
+                    <select name="estado" id="estado" class="form-control">
+                        <option value="">Seleccione un Estado</option>
+                        {% for estado in estados %}
+                        <option value="{{ estado }}">{{ estado }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group col-md-4">
+                    <label for="categoria">Categoría del Problema:</label>
+                    <select name="categoria" id="categoria" class="form-control">
+                        <option value="">Seleccione una Categoría</option>
+                        <option value="Infraestructura">Infraestructura</option>
+                        <option value="Personal">Personal</option>
+                        <option value="Insumos">Insumos</option>
+                        <option value="Servicios Auxiliares">Servicios Auxiliares</option>
+                        <option value="Otros">Otros</option>
+                    </select>
+                </div>
+            </div>
+            <div class="text-center">
+                <button type="submit" class="btn btn-success">Filtrar Datos</button>
+                <button type="reset" class="btn btn-secondary ml-2" id="resetButton">Resetear Filtros</button>
+            </div>
+        </form>
+        <h2>Resultados de Filtrado</h2>
+        <div id="resultadosFiltrados" class="table-responsive">
+            <table class="table table-bordered table-sm">
+                <thead class="thead-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Unidad Médica</th>
+                        <th>Acciones</th>
+                        <th>Decisión</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Los resultados filtrados se mostrarán aquí -->
+                </tbody>
+            </table>
+        </div>
+        <h2>Panel de Problemas Reportados</h2>
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm">
+                <thead class="thead-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Unidad Médica</th>
+                        <th>Acciones</th>
+                        <th>Decisión</th>
+                        <th>Origen del Problema</th> <!-- Nueva columna para el origen del problema -->
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if problemas %}
+                    {% for problema in problemas %}
+                    <tr class="{% if problema.aceptado == 'Pendiente' %}parpadeo-verde{% endif %}">
+                        <td><a href="#" data-toggle="modal" data-target="#modalProblema{{ problema.ticket_id }}">{{ problema.ticket_id }}</a></td>
+                        <td>{{ problema.unidad_medica }}</td>
+                        <td>
+                            {% if problema.aceptado == 'Aceptado' %}
+                                {% if problema.estado_problema not in ['Solucionado', 'No Solucionado', 'En Proceso'] %}
+                                    <form action="/cambiar_estado_problema" method="post" style="display:inline;">
+                                        <input type="hidden" name="ticket_id" value="{{ problema.ticket_id }}">
+                                        <select name="nuevo_estado" class="form-control mb-2">
+                                            <option value="">Seleccione una acción</option>
+                                            <option value="Solucionado" {% if problema.estado_problema == 'Solucionado' %}selected{% endif %}>Solucionado</option>
+                                            <option value="No Solucionado" {% if problema.estado_problema == 'No Solucionado' %}selected{% endif %}>No Solucionado</option>
+                                            <option value="En Proceso" {% if problema.estado_problema == 'En Proceso' %}selected{% endif %}>En Proceso</option>
+                                        </select>
+                                        <button type="submit" class="btn btn-primary btn-sm mt-1">Cambiar Estado</button>
+                                    </form>
+                                {% else %}
+                                    {{ problema.estado_problema }}
+                                {% endif %}
+                            {% else %}
+                                {{ problema.aceptado }}
+                            {% endif %}
+                        </td>
+                        <td class="d-flex justify-content-around">
+                            {% if problema.aceptado == 'Pendiente' %}
+                            <form action="/aceptar_rechazar_problema" method="post" style="display:inline;">
+                                <input type="hidden" name="ticket_id" value="{{ problema.ticket_id }}">
+                                <button type="submit" name="decision" value="Aceptado" class="btn btn-success btn-sm mx-1">Aceptar</button>
+                                <button type="submit" name="decision" value="Rechazado" class="btn btn-danger btn-sm mx-1">Rechazar</button>
+                            </form>
+                            {% else %}
+                                {{ problema.aceptado }}
+                            {% endif %}
+                        </td>
+                        <td>{{ problema.origen }}</td> <!-- Mostrar el origen del problema -->
+                    </tr>
+
+                    <!-- Modal -->
+                    <div class="modal fade" id="modalProblema{{ problema.ticket_id }}" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="exampleModalLongTitle">Detalle del Problema - ID {{ problema.ticket_id }}</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <p><strong>Unidad Médica:</strong> {{ problema.unidad_medica }}</p>
+                                    <p><strong>Categoría:</strong> {{ problema.categoria }}</p>
+                                    <p><strong>Subcategoría:</strong> {{ problema.subcategoria }}</p>
+                                    <p><strong>Descripción:</strong> {{ problema.descripcion }}</p>
+                                    <p><strong>Estado:</strong> {{ problema.estado }}</p>
+                                    <p><strong>Nivel de Riesgo:</strong> {{ problema.nivel_riesgo }}</p>
+                                    <p><strong>Actualizaciones:</strong> {{ problema.actualizaciones if problema.actualizaciones else 'Sin Actualizaciones' }}</p>
+                                    <p><strong>Fecha y Hora:</strong> {{ problema.fecha_hora }}</p>
+                                    <p><strong>Nombre Reportante:</strong> {{ problema.nombre_reportante }}</p>
+                                    <p><strong>Responsable:</strong> {{ problema.responsable_problema }}</p>
+                                    <p><strong>Correo Electrónico:</strong> {{ problema.correo_electronico }}</p>
+                                    <p><strong>Archivo Adjunto:</strong> {% if problema.archivo %}<a href="{{ url_for('static', filename='uploads/' ~ problema.archivo) }}" target="_blank">{{ problema.archivo }}</a>{% else %}No hay archivo adjunto{% endif %}</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="text-center">No hay problemas reportados</td> <!-- Ajustado para la nueva columna -->
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <footer class="text-center mt-4">
+        <p>Todos los derechos reservados - ISSSTE</p>
+    </footer>
+
+    <!-- Modal para seleccionar el origen del problema -->
+    <div class="modal fade" id="origenProblemaModal" tabindex="-1" role="dialog" aria-labelledby="origenModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="origenModalLongTitle">Seleccionar Origen del Problema</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="origenForm">
+                        <input type="hidden" id="origenTicketId" name="ticket_id">
+                        <input type="hidden" id="nuevoEstado" name="nuevo_estado">
+                        <div class="form-group">
+                            <label for="origen">Origen del Problema:</label>
+                            <select name="origen" id="origen" class="form-control" required>
+                                <option value="">Seleccione un origen</option>
+                                <option value="Gestión">Gestión</option>
+                                <option value="Proceso">Proceso</option>
+                                <option value="Operatividad">Operatividad</option>
+                                <option value="Administración">Administración</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Enviar</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openNav() {
+            document.getElementById("mySidebar").style.width = "250px";
+            document.getElementById("main").style.marginLeft = "250px";
+        }
+
+        function closeNav() {
+            document.getElementById("mySidebar").style.width = "0";
+            document.getElementById("main").style.marginLeft = "0";
+        }
+
+        document.getElementById('filterForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            cargarDatos();  // Llamar a cargarDatos cuando se cambie el estado para mostrar el mensaje de carga
+            var estado = document.getElementById('estado').value;
+            var categoria = document.getElementById('categoria').value;
+            fetch('/filtrar_datos_ajax', {            
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `estado=${estado}&categoria=${categoria}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                var resultadosDiv = document.getElementById('resultadosFiltrados').querySelector('tbody');
+                resultadosDiv.innerHTML = ''; // Limpiar resultados anteriores
+                if (data.datos.length === 0) {
+                    resultadosDiv.innerHTML = '<tr><td colspan="4" class="text-center">No hay resultados</td></tr>';
+                } else {
+                    data.datos.forEach(function(problema) {
+                        var actualizaciones = problema.actualizaciones ? problema.actualizaciones : 'Sin Actualizaciones';
+                        var row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td><a href="#" data-toggle="modal" data-target="#modalProblema${problema.ticket_id}">${problema.ticket_id}</a></td>
+                            <td>${problema.unidad_medica}</td>
+                            <td>
+                                ${problema.aceptado === 'Aceptado' ? `
+                                    ${problema.estado_problema ? problema.estado_problema : `
+                                    <form action="/cambiar_estado_problema" method="post" style="display:inline;">
+                                        <input type="hidden" name="ticket_id" value="${problema.ticket_id}">
+                                        <select name="nuevo_estado" class="form-control mb-2" onchange="this.form.submit()">
+                                            <option value="">Seleccione una acción</option>
+                                            <option value="Solucionado">Solucionado</option>
+                                            <option value="No Solucionado">No Solucionado</option>
+                                            <option value="En Proceso">En Proceso</option>
+                                        </select>
+                                    </form>
+                                    `}
+                                ` : `${problema.aceptado}`}
+                            </td>
+                            <td class="d-flex justify-content-around">
+                                ${problema.aceptado === 'Pendiente' ? `
+                                <form action="/aceptar_rechazar_problema" method="post" style="display:inline;">
+                                    <input type="hidden" name="ticket_id" value="${problema.ticket_id}">
+                                    <button type="submit" name="decision" value="Aceptado" class="btn btn-success btn-sm mx-1">Aceptar</button>
+                                    <button type="submit" name="decision" value="Rechazado" class="btn btn-danger btn-sm mx-1">Rechazar</button>
+                                </form>
+                                ` : `${problema.aceptado}`}
+                            </td>
+                            <td>${problema.origen}</td> <!-- Mostrar el origen del problema -->
+                        `;
+
+                        // Modal
+                        var modal = `
+                        <div class="modal fade" id="modalProblema${problema.ticket_id}" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered" role="document">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="exampleModalLongTitle">Detalle del Problema - ID ${problema.ticket_id}</h5>
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p><strong>Unidad Médica:</strong> ${problema.unidad_medica}</p>
+                                        <p><strong>Categoría:</strong> ${problema.categoria}</p>
+                                        <p><strong>Subcategoría:</strong> ${problema.subcategoria}</p>
+                                        <p><strong>Descripción:</strong> ${problema.descripcion}</p>
+                                        <p><strong>Estado:</strong> ${problema.estado}</p>
+                                        <p><strong>Nivel de Riesgo:</strong> ${problema.nivel_riesgo}</p>
+                                        <p><strong>Actualizaciones:</strong> ${actualizaciones}</p>
+                                        <p><strong>Fecha y Hora:</strong> ${problema.fecha_hora}</p>
+                                        <p><strong>Nombre Reportante:</strong> ${problema.nombre_reportante}</p>
+                                        <p><strong>Responsable:</strong> ${problema.responsable_problema}</p>
+                                        <p><strong>Correo Electrónico:</strong> ${problema.correo_electronico}</p>
+                                        <p><strong>Archivo Adjunto:</strong> ${problema.archivo ? '<a href="' + url_for('static', filename='uploads/' + problema.archivo) + '" target="_blank">' + problema.archivo + '</a>' : 'No hay archivo adjunto'}</p>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        `;
+                        resultadosDiv.appendChild(row);
+                        document.body.insertAdjacentHTML('beforeend', modal);
+                    });
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        document.getElementById('resetButton').addEventListener('click', function() {
+            var resultadosDiv = document.getElementById('resultadosFiltrados').querySelector('tbody');
+            resultadosDiv.innerHTML = ''; // Limpiar resultados al resetear filtros
+        });
+
+        function cargarDatos() {
+            var resultadosDiv = document.getElementById('resultadosFiltrados').querySelector('tbody');
+            resultadosDiv.innerHTML = '<tr><td colspan="4" class="text-center">Cargando...</td></tr>'; // Feedback de carga
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const estadoForm = document.querySelectorAll('form[action="/cambiar_estado_problema"]');
+            
+            estadoForm.forEach(form => {
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    const ticketId = this.querySelector('input[name="ticket_id"]').value;
+                    const nuevoEstado = this.querySelector('select[name="nuevo_estado"]').value;
+
+                    if (nuevoEstado) {
+                        document.getElementById('origenTicketId').value = ticketId;
+                        document.getElementById('nuevoEstado').value = nuevoEstado;
+                        $('#origenProblemaModal').modal('show');
+                    }
+                });
+            });
+
+            document.getElementById('origenForm').addEventListener('submit', function (e) {
+                e.preventDefault();
+                const ticketId = document.getElementById('origenTicketId').value;
+                const nuevoEstado = document.getElementById('nuevoEstado').value;
+                const origen = document.getElementById('origen').value;
+
+                if (origen) {
+                    fetch('/cambiar_estado_problema', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded',
+                        },
+                        body: `ticket_id=${ticketId}&nuevo_estado=${nuevoEstado}&origen=${origen}`
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            location.reload();
+                        } else {
+                            alert('Error al enviar el origen del problema.');
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                }
+            });
+        });
+
+        var mymap = L.map('mapid').setView([23.634501, -102.552784], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap'
+        }).addTo(mymap);
+
+        var problemas = {{ problemas|tojson }};
+        var markerCluster = L.markerClusterGroup();
+
+        problemas.forEach(function(problema) {
+            if (problema.lat && problema.lon) {
+                var actualizaciones = problema.actualizaciones ? problema.actualizaciones : 'Sin Actualizaciones';
+                var popupText = `
+                    <strong>Estado:</strong> ${problema.estado}<br>
+                    <strong>Unidad Médica:</strong> ${problema.unidad_medica}<br>
+                    <strong>Descripción:</strong> ${problema.descripcion}<br>
+                    <strong>Actualizaciones:</strong> ${actualizaciones}
+                `;
+                var markerOptions = {
+                    riseOnHover: true
+                };
+                if (problema.nivel_riesgo === "Crítico") {
+                    markerOptions.icon = L.divIcon({
+                        className: 'blinking-icon'
+                    });
+                }
+                var marker = L.marker([problema.lat, problema.lon], markerOptions).bindPopup(popupText);
+                markerCluster.addLayer(marker);
+            }
+        });
+
+        mymap.addLayer(markerCluster);
+    </script>
+    <style>
+        .blinking-icon {
+            background-color: red;
+            border-radius: 50%;
+            width: 10px;
+            height: 10px;
+            box-shadow: 0 0 10px red;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        .parpadeo-verde {
+            color: green;
+            animation: blink-green 3s infinite;
+        }
+
+        @keyframes blink-green {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        .descripcion-col, .actualizaciones-col {
+            max-width: 150px;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+
+        .descripcion {
+            max-width: 150px;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+
+        .map-container {
+            width: 80%;
+            margin: 0 auto;
+            border: 2px solid #691C32;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        #mapid {
+            height: 500px;
+        }
+    </style>
+</body>
+</html>

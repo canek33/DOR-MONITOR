@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas - ISSSTE</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #F5F5F5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        header {
+            background-color: #691C32;
+            color: white;
+            text-align: center;
+            padding: 1em 0;
+            position: relative;
+        }
+        .container {
+            width: 80%;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #691C32;
+        }
+        h1 {
+            margin: 0;
+        }
+        h2 {
+            margin-bottom: 20px;
+        }
+        .chart-container {
+            margin-bottom: 40px;
+        }
+        .filter-container {
+            margin-bottom: 20px;
+        }
+        footer {
+            text-align: center;
+            padding: 10px 0;
+            background-color: #F5F5F5;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+        }
+        a {
+            text-decoration: none;
+            color: white;
+            background-color: #BC955C;
+            padding: 8px 15px;
+            border-radius: 5px;
+        }
+        a:hover {
+            background-color: #6F7271;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Estadísticas - ISSSTE</h1>
+        <div style="position: absolute; top: 10px; right: 20px;">
+            <a href="/dashboard">Regresar al Dashboard</a>
+        </div>
+    </header>
+    <div class="container">
+        <h2>Panel de Control Interactivo</h2>
+        <div class="filter-container">
+            <select id="estadoFiltro">
+                <option value="">Todos los Estados</option>
+                <option value="Solucionado">Solucionado</option>
+                <option value="No Solucionado">No Solucionado</option>
+                <option value="En Proceso">En Proceso</option>
+                <option value="Sin Categorizar">Sin Categorizar</option>
+            </select>
+            <select id="categoriaFiltro">
+                <option value="">Todas las Categorías</option>
+                <option value="Infraestructura">Infraestructura</option>
+                <option value="Personal">Personal</option>
+                <!-- Más opciones... -->
+            </select>
+            <input type="date" id="fechaInicio">
+            <input type="date" id="fechaFin">
+            <button onclick="aplicarFiltros()">Aplicar Filtros</button>
+        </div>
+
+        <h2>Vista General</h2>
+        <div class="chart-container">
+            <canvas id="myChart"></canvas>
+        </div>
+        <h2>Problemas por Categoría</h2>
+        <div class="chart-container">
+            <canvas id="categoriaChart"></canvas>
+        </div>
+        <h2>Dispersión de Problemas</h2>
+        <div class="chart-container">
+            <canvas id="scatterChart"></canvas>
+        </div>
+    </div>
+    <footer>
+        <p>Todos los derechos reservados - ISSSTE</p>
+    </footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            cargarDatosEstadisticas();
+
+            document.getElementById('estadoFiltro').addEventListener('change', aplicarFiltros);
+            document.getElementById('categoriaFiltro').addEventListener('change', aplicarFiltros);
+            document.getElementById('fechaInicio').addEventListener('change', aplicarFiltros);
+            document.getElementById('fechaFin').addEventListener('change', aplicarFiltros);
+        });
+
+        function cargarDatosEstadisticas() {
+            fetch('/api/estadisticas')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data) {
+                        console.error('No se recibió ningún dato del servidor.');
+                        return;
+                    }
+
+                    if (!data.problemas_por_estado || !data.problemas_por_estado.length) {
+                        console.error('Datos incompletos o formato incorrecto.');
+                        return;
+                    }
+
+                    mostrarGraficos(data);
+                })
+                .catch(error => console.error('Error fetching statistics data:', error));
+        }
+
+        function aplicarFiltros() {
+            const estado = document.getElementById('estadoFiltro').value;
+            const categoria = document.getElementById('categoriaFiltro').value;
+            const fechaInicio = document.getElementById('fechaInicio').value;
+            const fechaFin = document.getElementById('fechaFin').value;
+
+            fetch('/api/estadisticas', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ estado, categoria, fecha_inicio: fechaInicio, fecha_fin: fechaFin })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (!data) {
+                    console.error('No se recibió ningún dato del servidor.');
+                    return;
+                }
+
+                if (!data.problemas_por_estado || !data.problemas_por_estado.length) {
+                    console.error('Datos incompletos o formato incorrecto.');
+                    return;
+                }
+
+                mostrarGraficos(data);
+            })
+            .catch(error => console.error('Error fetching filtered statistics:', error));
+        }
+
+        function mostrarGraficos(data) {
+            // Gráfico de barras para Vista General
+            var ctx = document.getElementById('myChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: data.problemas_por_estado_labels,
+                    datasets: [{
+                        label: '# de Problemas',
+                        data: data.problemas_por_estado,
+                        backgroundColor: ['#BC955C', '#691C32', '#6F7271', '#D3D3D3'],
+                        borderColor: ['#BC955C', '#691C32', '#6F7271', '#D3D3D3'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    return tooltipItem.label + ': ' + tooltipItem.raw;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Gráfico de dispersión
+            var scatterCtx = document.getElementById('scatterChart').getContext('2d');
+            new Chart(scatterCtx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Problemas por Estado y Nivel de Riesgo',
+                        data: data.problemas_scatter,
+                        backgroundColor: '#691C32',
+                        borderColor: '#691C32',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    return 'Nivel de Riesgo: ' + tooltipItem.raw.y;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'category',
+                            labels: data.problemas_scatter.map(d => d.x),
+                            title: {
+                                display: true,
+                                text: 'Estado'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Nivel de Riesgo'
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Gráfico de categorías
+            var categoriaCtx = document.getElementById('categoriaChart').getContext('2d');
+            new Chart(categoriaCtx, {
+                type: 'pie',
+                data: {
+                    labels: data.problemas_por_categoria.labels,
+                    datasets: [{
+                        label: 'Problemas por Categoría',
+                        data: data.problemas_por_categoria.data,
+                        backgroundColor: ['#BC955C', '#691C32', '#6F7271', '#D3D3D3', '#FFCE56', '#FF6384'],
+                        borderColor: ['#BC955C', '#691C32', '#6F7271', '#D3D3D3', '#FFCE56', '#FF6384'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    return tooltipItem.label + ': ' + tooltipItem.raw;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

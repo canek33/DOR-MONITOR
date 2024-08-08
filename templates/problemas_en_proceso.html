@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Problemas en Proceso - ISSSTE</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="/static/css/dashboard_admin.css">
+    <style>
+        body {
+            background-image: url('/static/images/ISSSTE_FONDO_BLANCO.jpg');
+            background-attachment: fixed;
+            background-size: cover;
+            background-position: center;
+            font-family: Arial, sans-serif;
+        }
+        .table td, .table th {
+            padding: 5px;
+            vertical-align: middle;
+            word-wrap: break-word;
+        }
+        .small-column {
+            max-width: 150px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .smallest-column {
+            max-width: 100px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .grouped-column {
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .hidden-column {
+            display: none;
+        }
+        header {
+            background-color: #691C32;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            position: relative;
+        }
+        header h1 {
+            margin: 0;
+        }
+        header a {
+            color: white;
+            text-decoration: none;
+            background-color: #BC955C;
+            padding: 8px 15px;
+            border-radius: 5px;
+            position: absolute;
+            top: 10px;
+        }
+        header a.logout {
+            left: 20px;
+        }
+    </style>
+    <script>
+        function toggleColumn(columnClass) {
+            const elements = document.querySelectorAll('.' + columnClass);
+            elements.forEach(element => {
+                if (element.classList.contains('hidden-column')) {
+                    element.classList.remove('hidden-column');
+                } else {
+                    element.classList.add('hidden-column');
+                }
+            });
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <a href="/dashboard" class="logout btn btn-secondary">Regresar al Dashboard</a>
+        <h1>Problemas en Proceso - ISSSTE</h1>
+    </header>
+    <div class="container mt-4">
+        <div class="mb-3">
+            <button class="btn btn-info" onclick="toggleColumn('grouped-column')">Mostrar/Ocultar Detalles del Reporte</button>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm">
+                <thead class="thead-light">
+                    <tr>
+                        <th>ID</th>
+                        <th class="small-column">Unidad Médica</th>
+                        <th>Categoría</th>
+                        <th>Subcategoría</th>
+                        <th>Descripción</th>
+                        <th>Estado</th>
+                        <th>Nivel de Riesgo</th>
+                        <th>Actualizaciones</th>
+                        <th>Fecha y Hora</th>
+                        <th class="grouped-column">Detalles del Reporte</th>
+                        <th>Origen del Problema</th>
+                        <th>Cambiar Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if problemas %}
+                    {% for problema in problemas %}
+                    <tr>
+                        <td>{{ problema.ticket_id }}</td>
+                        <td class="small-column">{{ problema.unidad_medica }}</td>
+                        <td>{{ problema.categoria }}</td>
+                        <td>{{ problema.subcategoria }}</td>
+                        <td>{{ problema.descripcion }}</td>
+                        <td>{{ problema.estado }}</td>
+                        <td>{{ problema.nivel_riesgo }}</td>
+                        <td>{{ problema.actualizaciones if problema.actualizaciones else 'Sin Actualizaciones' }}</td>
+                        <td>{{ problema.fecha_hora }}</td>
+                        <td class="grouped-column">
+                            {{ problema.nombre_reportante }}<br>
+                            {{ problema.responsable_problema }}<br>
+                            {{ problema.correo_electronico }}<br>
+                            {% if problema.archivo %}
+                            <a href="{{ url_for('static', filename='uploads/' ~ problema.archivo) }}" target="_blank">{{ problema.archivo }}</a>
+                            {% else %}
+                            No hay archivo adjunto
+                            {% endif %}
+                        </td>
+                        <td>{{ problema.origen }}</td>
+                        <td>
+                            <form action="/cambiar_estado_problema" method="post" style="display:inline;">
+                                <input type="hidden" name="ticket_id" value="{{ problema.ticket_id }}">
+                                <select name="nuevo_estado" class="form-control mb-2">
+                                    <option value="Solucionado" {% if problema.estado_problema == 'Solucionado' %}selected{% endif %}>Solucionado</option>
+                                    <option value="No Solucionado" {% if problema.estado_problema == 'No Solucionado' %}selected{% endif %}>No Solucionado</option>
+                                    <option value="En Proceso" {% if problema.estado_problema == 'En Proceso' %}selected{% endif %}>En Proceso</option>
+                                </select>
+                                <input type="hidden" name="origen" value="{{ problema.origen }}">
+                                <button type="submit" class="btn btn-primary btn-sm mt-1">Cambiar Estado</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="12" class="text-center">No hay problemas en proceso</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

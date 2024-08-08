@@ -1,0 +1,68 @@
+body {
+    font-family: Arial, sans-serif;
+    background-image: url('/static/images/ISSSTE_FONDO_BLANCO.jpg');
+    background-size: cover;
+    background-position: center;
+    padding: 20px;
+}
+
+header, footer {
+    background-color: #691C32;
+    color: white;
+    padding: 10px;
+    text-align: center;
+}
+
+header h1 {
+    margin: 0;
+}
+
+header a {
+    color: white;
+    text-decoration: none;
+    background-color: rgb(148, 35, 35);
+    padding: 8px 15px;
+    border-radius: 5px;
+}
+
+.container {
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 20px;
+}
+
+h2 {
+    color: #691C32;
+    border-bottom: 1px solid #691C32;
+    padding-bottom: 5px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+table, th, td {
+    border: 1px solid #691C32;
+}
+
+th, td {
+    padding: 10px;
+    text-align: left;
+}
+
+th {
+    background-color: #f4f4f4;
+}
+
+.button {
+    margin-top: 20px;
+    padding: 10px 20px;
+    background-color: #691C32;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+    display: inline-block;
+}
