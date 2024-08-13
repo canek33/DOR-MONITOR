@@ -23,6 +23,11 @@
         </div>
     </header>
     <div class="container">
+        {% if welcome_message %}
+            <div class="alert alert-success" role="alert">
+                {{ welcome_message }}
+            </div>
+        {% endif %}
         <h2 class="mt-4">Mapa de la República Mexicana</h2>
         <div id="mapid" style="height: 400px;" class="mb-4"></div>
 

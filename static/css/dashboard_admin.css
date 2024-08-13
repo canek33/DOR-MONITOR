@@ -19,10 +19,37 @@ h1 {
     margin-top: 20px;
 }
 
-table {
+.table-responsive {
+    overflow-x: auto;
+}
+
+.table {
+    table-layout: auto;
+    width: 100%;
     background-color: white;
     border-radius: 5px;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    margin-bottom: 0;
+}
+
+.table th, .table td {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+    word-wrap: break-word;
+    white-space: normal;
+    text-align: center;
+}
+
+.table th {
+    background-color: #f4f4f4;
+}
+
+.table td {
+    text-align: center;
+}
+
+.table td.descripcion, .table td.actualizaciones {
+    max-width: 200px;
 }
 
 .btn {
@@ -82,4 +109,71 @@ table {
     0% { opacity: 1; }
     50% { opacity: 0; }
     100% { opacity: 1; }
+}
+
+.welcome-message {
+    background-color: #BC955C;
+    color: white;
+}
+
+.parpadeo-verde {
+    color: green;
+    animation: blink-green 2s infinite;
+}
+
+@keyframes blink-green {
+    50% {
+        opacity: 0;
+    }
+}
+
+.sidebar {
+    height: 100%;
+    width: 250px;
+    position: fixed;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    overflow-x: hidden;
+    transition: 0.5s;
+    padding-top: 60px;
+}
+
+.sidebar a {
+    padding: 10px 15px;
+    text-decoration: none;
+    font-size: 1.2rem;
+    color: white;
+    display: block;
+    transition: 0.3s;
+}
+
+.sidebar a:hover {
+    color: #f1f1f1;
+}
+
+.sidebar .closebtn {
+    position: absolute;
+    top: 0;
+    right: 25px;
+    font-size: 36px;
+    margin-left: 50px;
+}
+
+.openbtn {
+    font-size: 20px;
+    cursor: pointer;
+    background-color: #691c32;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+}
+
+.openbtn:hover {
+    background-color: #444;
+}
+
+.text-center {
+    text-align: center;
 }

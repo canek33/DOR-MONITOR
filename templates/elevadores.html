@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mapeo de Elevadores - ISSSTE</title>
-    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -12,16 +12,94 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
     <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
     <script src="https://unpkg.com/leaflet.heat/dist/leaflet-heat.js"></script>
+    <style>
+        body {
+            background-image: url('/static/images/ISSSTE_FONDO_BLANCO.jpg');
+            background-size: cover;
+            background-position: center;
+            font-family: Arial, sans-serif;
+        }
+        header {
+            background-color: #691C32;
+            color: white;
+            padding: 10px 0;
+            text-align: center;
+            position: relative;
+        }
+        header h1 {
+            margin: 0;
+        }
+        header a {
+            color: white;
+            text-decoration: none;
+            background-color: rgb(148, 35, 35);
+            padding: 8px 15px;
+            border-radius: 5px;
+            position: absolute;
+            top: 10px;
+        }
+        header a.logout {
+            right: 20px;
+        }
+        header a.dashboard {
+            left: 20px;
+        }
+        .container {
+            padding: 20px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        h2 {
+            color: #691C32;
+        }
+        .btn-custom {
+            background-color: #BC955C;
+            color: white;
+            border: none;
+            margin: 5px 0;
+        }
+        .btn-custom:hover {
+            background-color: #9E7C53;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        td input[type="text"] {
+            width: 100%;
+        }
+        td button {
+            margin: 2px 0;
+        }
+        .hidden {
+            display: none;
+        }
+        @media (max-width: 768px) {
+            th, td {
+                font-size: 14px;
+                padding: 4px;
+            }
+            td button {
+                width: 100%;
+            }
+        }
+    </style>
 </head>
 <body>
     <header>
         <h1>Mapeo de Elevadores - ISSSTE</h1>
-        <div style="position: absolute; top: 10px; right: 20px;">
-            <a href="/logout" style="color: white; text-decoration: none; background-color: rgb(116, 73, 73); padding: 8px 15px; border-radius: 5px;">Cerrar Sesión</a>
-        </div>
-        <div style="position: absolute; top: 10px; left: 20px;">
-            <a href="/dashboard" style="color: white; text-decoration: none; background-color: rgb(148, 35, 35); padding: 8px 15px; border-radius: 5px;">Volver al Dashboard</a>
-        </div>
+        <a href="/logout" class="logout">Cerrar Sesión</a>
+        <a href="/dashboard" class="dashboard">Volver al Dashboard</a>
     </header>
     <div class="container">
         <h2>Filtrar Elevadores</h2>
@@ -42,12 +120,12 @@
                 <option value="INTERLIFT">INTERLIFT</option>
                 <option value="MC PUARSA">MC PUARSA</option>
             </select>
-            <input type="submit" value="Filtrar">
+            <input type="submit" value="Filtrar" class="btn btn-custom">
         </form>
 
-        <button id="toggleHeatmap">Mostrar Mapa de Calor</button>
-        <button id="toggleOutOfService">Mostrar Fuera de Servicio</button>
-        <button id="toggleOriginalMap">Mostrar Mapa Original</button>
+        <button id="toggleHeatmap" class="btn btn-custom">Mostrar Mapa de Calor</button>
+        <button id="toggleOutOfService" class="btn btn-custom">Mostrar Fuera de Servicio</button>
+        <button id="toggleOriginalMap" class="btn btn-custom">Mostrar Mapa Original</button>
 
         <div id="mapid" style="height: 600px;"></div>
 
@@ -162,7 +240,7 @@
         addMarkers(elevadores);
         mymap.addLayer(markerCluster);
 
-                    function updateChart(data) {
+        function updateChart(data) {
             var ctx = document.getElementById('elevadorChart').getContext('2d');
             var labels = Object.keys(data);
             var counts = Object.values(data);
@@ -247,3 +325,4 @@
     </script>
 </body>
 </html>
+

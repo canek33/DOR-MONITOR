@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Origen del Problema</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/dashboard_admin.css">
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="text-center">Origen del Problema</h1>
+            <a href="/dashboard" class="btn btn-secondary">Regresar al Dashboard</a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead class="thead-light" style="background-color: #6F7271;">
+                    <tr>
+                        <th>ID</th>
+                        <th>Unidad Médica</th>
+                        <th>Categoría</th>
+                        <th>Subcategoría</th>
+                        <th>Descripción</th>
+                        <th>Estado</th>
+                        <th>Nivel de Riesgo</th>
+                        <th>Origen del Problema</th>
+                        <th>Actualizaciones</th>
+                        <th>Fecha y Hora</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for problema in problemas %}
+                    <tr>
+                        <td>{{ problema.ticket_id }}</td>
+                        <td>{{ problema.unidad_medica }}</td>
+                        <td>{{ problema.categoria }}</td>
+                        <td>{{ problema.subcategoria }}</td>
+                        <td>{{ problema.descripcion }}</td>
+                        <td>{{ problema.estado_problema }}</td>
+                        <td>{{ problema.nivel_riesgo }}</td>
+                        <td>{{ problema.origen }}</td>
+                        <td>{{ problema.actualizaciones if problema.actualizaciones else 'Sin Actualizaciones' }}</td>
+                        <td>{{ problema.fecha_hora }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <footer class="text-center mt-4">
+        <p>Todos los derechos reservados - ISSSTE</p>
+    </footer>
+</body>
+</html>

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, make_response, send_from_directory, send_file, flash
 from flask_session import Session
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
@@ -6,19 +6,47 @@ import pandas as pd
 import os
 import requests
 from datetime import datetime
+import pdfkit
+from weasyprint import HTML, CSS
+import json
+from werkzeug.utils import secure_filename
+from werkzeug.exceptions import BadRequestKeyError
 
 app = Flask(__name__, static_folder='static')
 
 # Configuración de la sesión
-app.config["SECRET_KEY"] = 'una_clave_secreta_muy_segura'
+app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "una_clave_secreta_muy_segura_para_desarrollo")
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
+app.config["SESSION_FILE_DIR"] = os.path.join(os.getcwd(), 'flask_session_files')
+os.makedirs(app.config["SESSION_FILE_DIR"], exist_ok=True)  # Asegúrate de que el directorio exista
 Session(app)
 
 # Configuración de la base de datos
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///problemas.db'
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16 MB max
+
+# Asegúrate de que el directorio de uploads existe
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+
+# Cargar datos de unidades médicas desde el archivo JSON
+def cargar_unidades_medicas():
+    try:
+        with open(os.path.join(app.static_folder, 'data/unidades_medicas.json'), 'r') as file:
+            data = json.load(file)
+        return data
+    except Exception as e:
+        print(f"Error al cargar unidades médicas: {e}")
+        return []
+
+unidades_medicas_data = cargar_unidades_medicas()
+
+# Configuración de pdfkit
+path_to_wkhtmltopdf = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'  # Cambia esto a la ruta donde está instalado wkhtmltopdf
+config = pdfkit.configuration(wkhtmltopdf=path_to_wkhtmltopdf)
 
 # Modelo Problema
 class Problema(db.Model):
@@ -36,6 +64,17 @@ class Problema(db.Model):
     actualizaciones = db.Column(db.Text, nullable=True)
     estado_problema = db.Column(db.String(50), default='Pendiente')
     fecha_hora = db.Column(db.String(50), nullable=False, default=lambda: datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'))
+    aceptado = db.Column(db.String(50), default='Pendiente')
+    nombre_reportante = db.Column(db.String(100), nullable=False, default='Desconocido')
+    responsable_problema = db.Column(db.String(100), nullable=False, default='Desconocido')
+    correo_electronico = db.Column(db.String(100), nullable=False, default='no_disponible@example.com')
+    archivo = db.Column(db.String(300), nullable=True)  # Campo para el nombre del archivo subido
+    origen = db.Column(db.String(50))  
+    avances = db.Column(db.Text, nullable=True)  # Campo para los avances
+    seguimiento = db.Column(db.Text)  # Nueva columna para almacenar seguimiento
+    ultima_fecha_seguimiento = db.Column(db.DateTime, nullable=True)  # Nueva columna para almacenar la fecha del último seguimiento
+    fecha_compromiso = db.Column(db.Date, nullable=True)  # Nueva columna para la fecha de compromiso
+    fecha_solucion = db.Column(db.Date, nullable=True)  # Nueva columna para la fecha de solución
 
     def to_dict(self):
         return {
@@ -51,45 +90,33 @@ class Problema(db.Model):
             'ticket_id': self.ticket_id,
             'reportado_por_operativo': self.reportado_por_operativo,
             'actualizaciones': self.actualizaciones,
+            'seguimiento': self.seguimiento,  # Asegúrate de que el campo seguimiento esté incluido
             'estado_problema': self.estado_problema,
-            'fecha_hora': self.fecha_hora
+            'fecha_hora': self.fecha_hora,
+            'aceptado': self.aceptado,
+            'nombre_reportante': self.nombre_reportante,
+            'responsable_problema': self.responsable_problema,
+            'correo_electronico': self.correo_electronico,
+            'archivo': self.archivo,
+            'origen': self.origen,
+            'ultima_fecha_seguimiento': self.ultima_fecha_seguimiento,  # Incluyendo el campo de la última fecha de seguimiento
+            'fecha_compromiso': self.fecha_compromiso.strftime('%Y-%m-%d') if self.fecha_compromiso else None,
+            'fecha_solucion': self.fecha_solucion.strftime('%Y-%m-%d') if self.fecha_solucion else None
         }
 
-def importar_datos_excel():
-    file_path = 'C:\\Users\\rales\\Documents\\proyecto-login\\Gestión_Tickets_Unidades_Médicas.xlsx'
-    df = pd.read_excel(file_path)
-
-    for _, row in df.iterrows():
-        estado = str(row['Estado']) if pd.notna(row['Estado']) else 'Desconocido'
-        prefix = estado[:2].upper()
-        last_ticket = Problema.query.filter(Problema.ticket_id.like(f"{prefix}%")).order_by(Problema.ticket_id.desc()).first()
-        if last_ticket:
-            last_ticket_number = int(last_ticket.ticket_id[2:])
-            ticket_id = f"{prefix}{last_ticket_number + 1:05d}"
-        else:
-            ticket_id = f"{prefix}00001"
-
-        problema = Problema(
-            estado=estado,
-            unidad_medica=str(row['Unidad Médica']) if pd.notna(row['Unidad Médica']) else 'Desconocido',
-            categoria=str(row['Categoría del Problema']) if pd.notna(row['Categoría del Problema']) else 'Desconocido',
-            subcategoria=str(row['Subcategoría']) if pd.notna(row['Subcategoría']) else '',
-            descripcion=str(row['Descripción del Problema']) if pd.notna(row['Descripción del Problema']) else 'No especificado',
-            nivel_riesgo=str(row['Nivel de Riesgo']) if pd.notna(row['Nivel de Riesgo']) else 'Bajo',
-            lat=23.634501,  # Placeholder, ajustar según los datos reales
-            lon=-102.552784,  # Placeholder, ajustar según los datos reales,
-            ticket_id=ticket_id,
-            reportado_por_operativo=False,
-            fecha_hora=datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        )
-        db.session.add(problema)
-    db.session.commit()
+def normalizar_estado(estado):
+    estado = estado.strip()
+    estado = " ".join(estado.split())
+    estado = estado.upper()
+    partes = estado.split()
+    if partes[0] == "CDMX" and len(partes) > 2:
+        return "CDMX " + " ".join(p.capitalize() for p in partes[1:])
+    return " ".join(p.capitalize() for p in partes)
 
 @app.before_request
 def before_request():
     if not hasattr(app, 'first_request_done'):
         db.create_all()
-        importar_datos_excel()
         app.first_request_done = True
 
 # Roles y estados asignados a los usuarios
@@ -130,6 +157,8 @@ user_roles = {
     'yucatan': {'role': 'operativo', 'state': 'Yucatán', 'password': 'pass123'},
     'zacatecas': {'role': 'operativo', 'state': 'Zacatecas', 'password': 'pass123'},
     'admin1': {'role': 'admin', 'password': 'admin123'},
+    'DrCanekSerna': {'role': 'admin', 'password': 'admin123'},
+    'DraEvelinGonzalez': {'role': 'admin', 'password': 'admin123'},
     'admin2': {'role': 'admin', 'password': 'admin123'},
     'admin3': {'role': 'admin', 'password': 'admin123'},
     'admin4': {'role': 'admin', 'password': 'admin123'},
@@ -141,42 +170,104 @@ user_roles = {
 
 @app.route('/')
 def index():
+    return render_template('index.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user_info = user_roles.get(username)
+        
+        # Imprime las credenciales recibidas y las esperadas
+        print(f"Received username: {username}")
+        print(f"Received password: {password}")
+        if user_info:
+            print(f"Expected password: {user_info['password']}")
+
+        if user_info and user_info['password'] == password:
+            session['username'] = username
+            session['role'] = user_info['role']
+            session['state'] = user_info.get('state')
+            
+            if user_info['role'] == 'operativo':
+                session['welcome_message'] = f'Bienvenido(a) {username}, Operativo de {session["state"]}'
+            elif user_info['role'] == 'admin':
+                session['welcome_message'] = f'Bienvenido(a) {username}, Administrador'
+            elif user_info['role'] == 'superadmin':
+                session['welcome_message'] = f'Bienvenido(a) {username}, Superadministrador'
+            
+            return redirect(url_for('bienvenida'))
+        else:
+            return "Credenciales incorrectas", 401
+    
+    # Si el método es GET, renderiza el formulario de login
     return render_template('login.html')
 
-@app.route('/login', methods=['POST'])
-def login():
-    username = request.form['username']
-    password = request.form['password']
-    user_info = user_roles.get(username)
-    if user_info and user_info['password'] == password:
-        session['username'] = username
-        session['role'] = user_info['role']
-        session['state'] = user_info.get('state')
-        return redirect(url_for('dashboard'))
+@app.route('/bienvenida')
+def bienvenida():
+    if 'username' in session:
+        user_info = user_roles.get(session['username'])
+        user_role = user_info['role'] if user_info else None
+        return render_template('bienvenida.html', welcome_message=session['welcome_message'], username=session['username'], user_role=user_role)
     else:
-        return 'Usuario o contraseña incorrectos'
+        return redirect(url_for('index'))
+
 
 @app.route('/dashboard')
 def dashboard():
     if 'username' not in session:
         return redirect(url_for('index'))
 
-    user_info = user_roles.get(session['username'])
-    if user_info and user_info['role'] == 'operativo':
-        problemas = Problema.query.filter_by(estado=user_info['state']).filter_by(reportado_por_operativo=True).order_by(Problema.id.desc()).all()
-        unidades_medicas = Problema.query.with_entities(Problema.unidad_medica).filter_by(estado=user_info['state']).distinct().all()
-        unidades_medicas = [um[0] for um in unidades_medicas]
-        return render_template('dashboard_operativo.html', problemas=[problema.to_dict() for problema in problemas], unidades_medicas=unidades_medicas)
-    elif user_info and user_info['role'] == 'admin':
-        problemas = Problema.query.filter_by(reportado_por_operativo=True).filter(Problema.estado_problema == 'Pendiente').all()
-        estados = sorted(set([estado[0] for estado in db.session.query(Problema.estado).distinct().all() if estado[0] not in ["Ciudad de México", "CDMX - Zona Norte", "CDMX - Zona Poniente", "CDMX - Zona Oriente", "CDMX - Zona Sur"]] + ["CDMX Zona Norte", "CDMX Zona Poniente", "CDMX Zona Oriente", "CDMX Zona Sur"]))
-        return render_template('dashboard_admin.html', problemas=[problema.to_dict() for problema in problemas], estados=estados)
-    elif user_info and user_info['role'] == 'superadmin':
-        problemas = Problema.query.filter(Problema.estado_problema == 'Pendiente').order_by(Problema.id.desc()).all()
-        estados = sorted(set([estado[0] for estado in db.session.query(Problema.estado).distinct().all() if estado[0] not in ["Ciudad de México", "CDMX - Zona Norte", "CDMX - Zona Poniente", "CDMX - Zona Oriente", "CDMX - Zona Sur"]] + ["CDMX Zona Norte", "CDMX Zona Poniente", "CDMX Zona Oriente", "CDMX Zona Sur"]))
-        return render_template('dashboard_superadmin.html', problemas=[problema.to_dict() for problema in problemas], estados=estados)
+    welcome_message = session.pop('welcome_message', None)
+    username = session['username']  # Obtener el nombre de usuario de la sesión
+
+    user_info = user_roles.get(username)
+    if user_info and user_info['role'] in ['admin', 'superadmin']:
+        problemas = Problema.query.filter_by(reportado_por_operativo=True).order_by(Problema.id.desc()).all()
+
+        estados_vistos = set()
+        estados = []
+        for estado in db.session.query(Problema.estado).distinct().all():
+            estado_normalizado = estado[0].strip().title()
+            if not estado_normalizado.startswith('Cdmx - Zona') and estado_normalizado not in estados_vistos:
+                estados_vistos.add(estado_normalizado)
+                estados.append(estado_normalizado)
+
+        return render_template('dashboard_admin.html', problemas=[problema.to_dict() for problema in problemas], estados=sorted(estados), welcome_message=welcome_message, username=username)
+    
+    elif user_info and user_info['role'] == 'operativo':
+        estado_asignado = user_info['state']
+        tipo_dashboard = request.args.get('tipo', 'general')  # Por defecto es 'general'
+        
+        problemas_reportados = Problema.query.filter_by(reportado_por_operativo=True, estado=estado_asignado).order_by(Problema.id.desc()).all()
+        
+        # Cargar el archivo JSON y obtener todas las unidades médicas para el estado asignado
+        try:
+            with open('static/data/unidades_medicas.json', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            todas_unidades_medicas = []
+            for estado, unidades in data.items():
+                if estado_asignado.lower() in estado.lower():
+                    todas_unidades_medicas.extend(unidades)
+        except FileNotFoundError:
+            print("El archivo unidades_medicas.json no fue encontrado.")
+            todas_unidades_medicas = []
+        except json.JSONDecodeError:
+            print("Error al decodificar el archivo JSON.")
+            todas_unidades_medicas = []
+        except UnicodeDecodeError as e:
+            print(f"Error de codificación al leer el archivo JSON: {e}")
+            todas_unidades_medicas = []
+
+        # Renderizar la plantilla correspondiente
+        if tipo_dashboard == 'detallado':
+            return render_template('dashboard_operativo_detallado.html', problemas=[problema.to_dict() for problema in problemas_reportados], estado_asignado=estado_asignado, unidades_medicas=sorted(set(todas_unidades_medicas)), welcome_message=welcome_message, username=username)
+        else:
+            return render_template('dashboard_operativo.html', problemas=[problema.to_dict() for problema in problemas_reportados], estado_asignado=estado_asignado, unidades_medicas=sorted(set(todas_unidades_medicas)), welcome_message=welcome_message, username=username)
     else:
-        return 'Acceso no autorizado'
+        return 'Acceso no autorizado', 403
 
 @app.route('/gestionar_usuarios')
 def gestionar_usuarios():
@@ -227,7 +318,7 @@ def eliminar_usuario():
     if username in user_roles:
         del user_roles[username]
 
-    return     redirect(url_for('gestionar_usuarios'))
+    return redirect(url_for('gestionar_usuarios'))
 
 @app.route('/reportar_problema', methods=['POST'])
 def reportar_problema():
@@ -235,15 +326,30 @@ def reportar_problema():
         return redirect(url_for('index'))
 
     try:
-        estado = request.form['estado']
+        estado = normalizar_estado(request.form['estado'])
         unidad_medica = request.form['unidad_medica']
         categoria_problema = request.form['categoria_problema']
         subcategoria_problema = request.form['subcategoria']
         nivel_riesgo = request.form['nivel_riesgo']
         descripcion = request.form['descripcion']
+        nombre_reportante = request.form['nombre_reportante']
+        responsable_problema = request.form['responsable_problema']
+        correo_electronico = request.form['correo_electronico']
         fecha_hora = request.form['fecha_hora']
+        archivo = request.files.get('archivo')  # Obtener archivo
     except KeyError as e:
-        return f"Falta el campo {str(e)} en el formulario", 400
+       print(f"Error: {e}")  # Para identificar el campo que falta
+       return f"Falta el campo {str(e)} en el formulario", 400
+    
+    if not all([estado, unidad_medica, categoria_problema, subcategoria_problema, nivel_riesgo, descripcion, nombre_reportante, responsable_problema, correo_electronico]):
+        return "Todos los campos son obligatorios", 400
+    
+     # Manejo del archivo PDF
+    if archivo and archivo.filename != '':
+        filename = secure_filename(archivo.filename)
+        archivo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+    else:
+        filename = None
 
     # Geocodificación de la unidad médica
     api_key = "AIzaSyAhPtAHcRPnNIzo9-1Ab_Qxn7HFTRjPK9s"
@@ -257,6 +363,7 @@ def reportar_problema():
     else:
         lat, lon = None, None  # Manejar el caso donde la geocodificación falla
 
+    # Generar un nuevo ticket_id único
     prefix = session['username'][:2].upper()
     last_ticket = Problema.query.filter(Problema.ticket_id.like(f"{prefix}%")).order_by(Problema.ticket_id.desc()).first()
     if last_ticket:
@@ -272,16 +379,54 @@ def reportar_problema():
         subcategoria=subcategoria_problema,
         descripcion=descripcion,
         nivel_riesgo=nivel_riesgo,
-        lat=lat if lat else 23.634501,  # Usar lat y lon obtenidos de la geocodificación
+        lat=lat if lat else 23.634501,
         lon=lon if lon else -102.552784,
         ticket_id=ticket_id,
-        reportado_por_operativo=True,  # Marcamos que es reportado por operativo
-        fecha_hora=fecha_hora
+        reportado_por_operativo=True,
+        nombre_reportante=nombre_reportante,
+        responsable_problema=responsable_problema,
+        correo_electronico=correo_electronico,
+        fecha_hora=fecha_hora,
+        archivo=filename  # Almacena el nombre del archivo en la base de datos
     )
     db.session.add(problema)
     db.session.commit()
 
     return redirect(url_for('dashboard', mensaje='Problema reportado exitosamente'))
+
+@app.route('/obtener_unidades_medicas', methods=['GET'])
+def obtener_unidades_medicas():
+    estado = request.args.get('estado')
+    if estado:
+        estado_normalizado = normalizar_estado(estado)
+        try:
+            with open('static/data/unidades_medicas.json', 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            unidades_medicas = data.get(estado_normalizado, [])
+        except FileNotFoundError:
+            print("El archivo unidades_medicas.json no fue encontrado.")
+            unidades_medicas = []
+        except json.JSONDecodeError:
+            print("Error al decodificar el archivo JSON.")
+            unidades_medicas = []
+        
+        return jsonify(unidades_medicas)
+    return jsonify([])
+
+# Agregar un diccionario con los detalles de los empleados
+empleados = {
+    '12345': {'nombre': 'Juan Perez', 'puesto': 'Médico'},
+    '67890': {'nombre': 'Ana Gomez', 'puesto': 'Enfermera'},
+    '10123': {'nombre': 'Carlos Varela', 'puesto': 'Jefe de Mantenimiento'}
+}
+
+@app.route('/get_employee_details/<numero_empleado>', methods=['GET'])
+def get_employee_details(numero_empleado):
+    empleado = empleados.get(numero_empleado)
+    if empleado:
+        return jsonify(empleado)
+    else:
+        return jsonify({'error': 'Empleado no encontrado'}), 404
 
 @app.route('/actualizar_ticket', methods=['POST'])
 def actualizar_ticket():
@@ -291,27 +436,67 @@ def actualizar_ticket():
     ticket_id = request.form['ticket_id']
     nueva_actualizacion = request.form['nueva_actualizacion']
     fecha_hora_actualizacion = request.form['fecha_hora_actualizacion']
+    numero_empleado = request.form['numero_empleado']
+    nombre_empleado = request.form['nombre_empleado']
+    puesto_empleado = request.form['puesto_empleado']
+    archivo = request.files.get('archivo')  # Obtener archivo
 
     problema = Problema.query.filter_by(ticket_id=ticket_id).first()
     if problema:
+        nueva_actualizacion_formateada = f"{fecha_hora_actualizacion} ({nombre_empleado} - {puesto_empleado}): {nueva_actualizacion}"
         if problema.actualizaciones:
-            problema.actualizaciones += f"\n{fecha_hora_actualizacion}: {nueva_actualizacion}"
+            problema.actualizaciones = f"{problema.actualizaciones}\n{nueva_actualizacion_formateada}"
         else:
-            problema.actualizaciones = f"{fecha_hora_actualizacion}: {nueva_actualizacion}"
+            problema.actualizaciones = nueva_actualizacion_formateada
+
+        # Manejo del archivo PDF en la actualización
+        if archivo and archivo.filename != '':
+            filename = secure_filename(archivo.filename)
+            archivo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            problema.archivo = filename
+
         db.session.commit()
     
     return redirect(url_for('dashboard', mensaje='Ticket actualizado exitosamente'))
 
+@app.route('/uploads/<filename>')
+def uploaded_file(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
+@app.route('/subir_archivo/<ticket_id>', methods=['POST'])
+def subir_archivo(ticket_id):
+    if 'username' not in session:
+        return redirect(url_for('index'))
+
+    problema = Problema.query.filter_by(ticket_id=ticket_id).first()
+    if not problema:
+        return "Problema no encontrado", 404
+
+    archivo = request.files['archivo']
+    if archivo and archivo.filename != '':
+        filename = secure_filename(archivo.filename)
+        archivo.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        problema.archivo = filename
+        db.session.commit()
+
+    return redirect(url_for('dashboard', mensaje='Archivo subido exitosamente'))
+
+
+@app.route('/get_problem_details/<ticket_id>', methods=['GET'])
+def get_problem_details(ticket_id):
+    problema = Problema.query.filter_by(ticket_id=ticket_id).first()
+    if problema:
+        return jsonify(problema.to_dict())
+    else:
+        return jsonify({"error": "Problema no encontrado"}), 404
+
 @app.route('/filtrar_datos_ajax', methods=['POST'])
 def filtrar_datos_ajax():
-    estado = request.form.get('estado')
-    categoria = request.form.get('categoria')
-    query = Problema.query.filter_by(reportado_por_operativo=True)  # Solo problemas reportados
+    estado = normalizar_estado(request.form.get('estado'))
+    query = Problema.query.filter_by(reportado_por_operativo=True)
 
     if estado:
         query = query.filter_by(estado=estado)
-    if categoria:
-        query = query.filter_by(categoria=categoria)
     
     resultados = [problema.to_dict() for problema in query.all()]
 
@@ -320,35 +505,73 @@ def filtrar_datos_ajax():
 @app.route('/logout')
 def logout():
     session.pop('username', None)
+    session.pop('role', None)
+    session.pop('state', None)
+    session.pop('welcome_message', None)
     return redirect(url_for('index'))
+
+@app.route('/dashboard_operativo_detallado')
+def dashboard_operativo_detallado():
+    # Pasa cualquier contexto necesario al template
+    return render_template('dashboard_operativo_detallado.html')
+
+@app.route('/submit_detallado', methods=['POST'])
+def submit_detallado():
+    # Procesa los datos del formulario detallado
+    # ...
+    return redirect(url_for('dashboard_operativo_detallado'))
 
 @app.route('/mapas')
 def mapas():
     return render_template('mapas.html')
 
-@app.route('/api/estadisticas')
+@app.route('/api/estadisticas', methods=['GET', 'POST'])
 def get_estadisticas():
-    problemas = Problema.query.all()
+    try:
+        estados_relevantes = ['Solucionado', 'No Solucionado', 'En Proceso', 'Sin Categorizar']
+        query = Problema.query.filter(Problema.estado_problema.in_(estados_relevantes))
 
-    problemas_por_estado = {
-        'Nuevos': sum(1 for p in problemas if p.estado_problema == 'Pendiente'),
-        'No Solucionados': sum(1 for p in problemas if p.estado_problema == 'No Solucionado'),
-        'Solucionados': sum(1 for p in problemas if p.estado_problema == 'Solucionado'),
-        'En Proceso': sum(1 for p in problemas if p.estado_problema == 'En Proceso')
-    }
+        if request.method == 'POST':
+            filtros = request.json
+            if 'estado' in filtros:
+                query = query.filter(Problema.estado_problema == filtros['estado'])
+            if 'categoria' in filtros:
+                query = query.filter(Problema.categoria == filtros['categoria'])
+            if 'fecha_inicio' in filtros and 'fecha_fin' in filtros:
+                query = query.filter(Problema.fecha_hora.between(filtros['fecha_inicio'], filtros['fecha_fin']))
+        
+        problemas = query.all()
 
-    problemas_scatter = [{'x': p.estado, 'y': p.nivel_riesgo} for p in problemas]
+        problemas_por_estado = {estado: 0 for estado in estados_relevantes}
+        problemas_scatter = []
+        problemas_por_categoria = {}
 
-    problemas_por_categoria = {
-        'labels': list(set(p.categoria for p in problemas)),
-        'data': [sum(1 for p in problemas if p.categoria == cat) for cat in set(p.categoria for p in problemas)]
-    }
+        for problema in problemas:
+            if problema.estado_problema in problemas_por_estado:
+                problemas_por_estado[problema.estado_problema] += 1
 
-    return jsonify({
-        'problemas_por_estado': list(problemas_por_estado.values()),
-        'problemas_scatter': problemas_scatter,
-        'problemas_por_categoria': problemas_por_categoria
-    })
+            problemas_scatter.append({'x': problema.estado, 'y': problema.nivel_riesgo})
+
+            categoria = problema.categoria or 'Sin Categorizar'
+            if categoria in problemas_por_categoria:
+                problemas_por_categoria[categoria] += 1
+            else:
+                problemas_por_categoria[categoria] = 1
+
+        response = {
+            'problemas_por_estado': list(problemas_por_estado.values()),
+            'problemas_por_estado_labels': list(problemas_por_estado.keys()),
+            'problemas_scatter': problemas_scatter,
+            'problemas_por_categoria': {
+                'labels': list(problemas_por_categoria.keys()),
+                'data': list(problemas_por_categoria.values())
+            }
+        }
+        return jsonify(response)
+
+    except Exception as e:
+        print(f"Error al generar las estadísticas: {e}")
+        return jsonify({'error': 'Ocurrió un error al obtener las estadísticas'}), 500
 
 @app.route('/estadisticas')
 def estadisticas():
@@ -356,11 +579,9 @@ def estadisticas():
 
 @app.route('/elevadores')
 def elevadores():
-    # Cargar datos del archivo CSV
     file_path = 'C:\\Users\\rales\\Documents\\proyecto-login\\elevadores2.csv'
     df = pd.read_csv(file_path)
 
-    # Filtrar las columnas necesarias
     elevadores = df[['Latitud', 'Longitud', 'Unidad_Medica', 'Marca', 'Uso', 'Estado']].to_dict(orient='records')
 
     return render_template('elevadores.html', elevadores=elevadores)
@@ -384,7 +605,6 @@ def aires():
     file_path = 'C:\\Users\\rales\\Documents\\proyecto-login\\Levantamiento_Aires_acondicionados.xlsx'
     df = pd.read_excel(file_path)
 
-    # Asegurarse de que las columnas se lean correctamente
     df.columns = df.columns.str.strip()
 
     if request.method == 'POST':
@@ -395,7 +615,6 @@ def aires():
         tipo_equipo = request.form['tipo_equipo']
         estatus = request.form['estatus']
 
-        # Realizar la geocodificación usando la API de Google Maps
         api_key = "AIzaSyAhPtAHcRPnNIzo9-1Ab_Qxn7HFTRjPK9s"
         geocode_url = f"https://maps.googleapis.com/maps/api/geocode/json?address={unidad_medica},+{estado_representacion},+Mexico&key={api_key}"
         response = requests.get(geocode_url)
@@ -405,7 +624,7 @@ def aires():
             lat = geocode_data['results'][0]['geometry']['location']['lat']
             lon = geocode_data['results'][0]['geometry']['location']['lng']
         else:
-            lat, lon = None, None  # Manejar el caso donde la geocodificación falla
+            lat, lon = None, None
 
         nueva_fila = {
             'ESTADO /REPRESENTACIÓN': estado_representacion,
@@ -483,36 +702,214 @@ def cambiar_estado_problema():
     try:
         ticket_id = request.form['ticket_id']
         nuevo_estado = request.form['nuevo_estado']
+        origen = request.form['origen']
     except KeyError as e:
         return f"Falta el campo {str(e)} en el formulario", 400
-
-    if not ticket_id or not nuevo_estado:
-        return 'Faltan datos en el formulario', 400
 
     problema = Problema.query.filter_by(ticket_id=ticket_id).first()
     if problema:
         problema.estado_problema = nuevo_estado
+        problema.origen = origen
         db.session.commit()
-    
+
     return redirect(url_for('dashboard', mensaje='Estado del problema actualizado exitosamente'))
 
-@app.route('/problemas_solucionados')
-def problemas_solucionados():
-    problemas = Problema.query.filter_by(estado_problema='Solucionado').all()
-    return render_template('problemas_solucionados.html', problemas=[problema.to_dict() for problema in problemas])
-
-@app.route('/problemas_no_solucionados')
-def problemas_no_solucionados():
-    problemas = Problema.query.filter_by(estado_problema='No Solucionado').all()
-    return render_template('problemas_no_solucionados.html', problemas=[problema.to_dict() for problema in problemas])
+@app.route('/origen_problema')
+def origen_problema():
+    problemas = Problema.query.all()  # Ajustamos para mostrar todos los problemas
+    return render_template('origen_problema.html', problemas=problemas)
 
 @app.route('/problemas_en_proceso')
 def problemas_en_proceso():
     problemas = Problema.query.filter_by(estado_problema='En Proceso').all()
-    return render_template('problemas_en_proceso.html', problemas=[problema.to_dict() for problema in problemas])
+    return render_template('problemas_en_proceso.html', problemas=problemas)
+
+@app.route('/problemas_no_solucionados')
+def problemas_no_solucionados():
+    problemas = Problema.query.filter_by(estado_problema='No Solucionado').all()
+    return render_template('problemas_no_solucionados.html', problemas=problemas)
+
+@app.route('/problemas_solucionados')
+def problemas_solucionados():
+    problemas = Problema.query.filter_by(estado_problema='Solucionado').all()
+    return render_template('problemas_solucionados.html', problemas=problemas)
+
+@app.route('/aceptar_rechazar_problema', methods=['POST'])
+def aceptar_rechazar_problema():
+    if 'username' not in session or session['role'] != 'admin':
+        return redirect(url_for('index'))
+
+    try:
+        ticket_id = request.form['ticket_id']
+        decision = request.form['decision']
+    except KeyError as e:
+        return f"Falta el campo {str(e)} en el formulario", 400
+
+    problema = Problema.query.filter_by(ticket_id=ticket_id).first()
+    if problema:
+        problema.aceptado = decision
+        if decision == "Rechazado":
+            problema.estado_problema = "Rechazado"
+        db.session.commit()
+
+    return redirect(url_for('dashboard', mensaje=f'Problema {decision.lower()} exitosamente'))
+
+@app.route('/reporte_problemas')
+def reporte_problemas():
+    try:
+        problemas = Problema.query.all()
+        return render_template('reporte_problemas.html', problemas=problemas)
+    except Exception as e:
+        print(f"Error al cargar el reporte de problemas: {e}")
+        return str(e), 500
+
+@app.route('/generate_report_pdf')
+def generate_report_pdf():
+    try:
+        problemas = Problema.query.filter(Problema.estado_problema.in_(['Solucionado', 'No Solucionado', 'En Proceso'])).all()
+
+        rendered = render_template('reporte_problemas.html', problemas=problemas)
+
+        options = {
+            'page-size': 'A4',
+            'margin-top': '0.75in',
+            'margin-right': '0.75in',
+            'margin-bottom': '0.75in',
+            'margin-left': '0.75in',
+            'encoding': "UTF-8",
+            'custom-header': [('Accept-Encoding', 'gzip')],
+            'no-outline': None,
+            'enable-local-file-access': None  # Permite acceso a archivos locales
+        }
+
+        # Ruta donde se almacenará el PDF
+        pdf_path = r'C:\Users\rales\Documents\proyecto-login\static\reports\ISSSTE_membretada_2024.pdf'
+
+        pdfkit.from_string(rendered, pdf_path, options=options, configuration=config)
+
+        return send_file(pdf_path, as_attachment=True, download_name='ISSSTE_REPORTE_2024.pdf')
+
+    except Exception as e:
+        print(f"Error al generar el PDF: {e}")
+        return str(e), 500
+
+@app.route('/cambiar_nivel_riesgo', methods=['POST'])
+def cambiar_nivel_riesgo():
+    if 'username' not in session:
+        return redirect(url_for('index'))
+
+    try:
+        ticket_id = request.form['ticket_id']
+        nuevo_nivel_riesgo = request.form['nivel_riesgo']
+    except KeyError as e:
+        return f"Falta el campo {str(e)} en el formulario", 400
+
+    problema = Problema.query.filter_by(ticket_id=ticket_id).first()
+    if problema:
+        problema.nivel_riesgo = nuevo_nivel_riesgo
+        db.session.commit()
+
+    return redirect(url_for('dashboard', mensaje='Nivel de riesgo actualizado exitosamente'))
+
+@app.route('/guardar_avance', methods=['POST'])
+def guardar_avance():
+    if 'username' not in session:
+        return redirect(url_for('index'))
+
+    try:
+        ticket_id = request.form['ticket_id']
+        fecha_avance = request.form['fecha_avance']
+        detalle_avance = request.form['detalle_avance']
+        fecha_compromiso = request.form['fecha_compromiso']
+        fecha_solucion = request.form['fecha_solucion']
+    except KeyError as e:
+        return f"Falta el campo {str(e)} en el formulario", 400
+
+    problema = Problema.query.filter_by(ticket_id=ticket_id).first()
+    if problema:
+        nuevo_avance = f"{fecha_avance}: {detalle_avance}\n"
+        if problema.avances:
+            problema.avances += nuevo_avance
+        else:
+            problema.avances = nuevo_avance
+
+        problema.fecha_compromiso = datetime.strptime(fecha_compromiso, '%Y-%m-%d').date() if fecha_compromiso else None
+        problema.fecha_solucion = datetime.strptime(fecha_solucion, '%Y-%m-%d').date() if fecha_solucion else None
+        
+        db.session.commit()
+
+    return "Avance guardado", 200
+
+
+@app.route('/enviar_seguimiento', methods=['POST'])
+def enviar_seguimiento():
+    try:
+        # Capturar el seguimiento y el ticket_id desde el formulario
+        seguimiento = request.form['mensaje_seguimiento']
+        ticket_id = request.form['ticket_id']
+        
+        # Obtener la información del usuario actual desde la sesión
+        user_name = session.get('username', 'Usuario Desconocido')  # Asegúrate de que 'username' es la clave que usas para almacenar el nombre de usuario en la sesión
+        user_role = 'Administrador'  # Suponiendo que estás utilizando un sistema de roles
+
+        # Buscar el problema correspondiente en la base de datos
+        problema = Problema.query.filter_by(ticket_id=ticket_id).first()
+
+        if problema:
+            # Agregar el seguimiento al historial
+            fecha_hora_actual = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            nuevo_seguimiento = f"{fecha_hora_actual} - {user_name} ({user_role}): {seguimiento}"
+
+            if problema.seguimiento:
+                problema.seguimiento += f"\n{nuevo_seguimiento}"
+            else:
+                problema.seguimiento = nuevo_seguimiento
+
+            # Actualizar la fecha del último seguimiento
+            problema.ultima_fecha_seguimiento = datetime.now()
+
+            # Guardar los cambios en la base de datos
+            db.session.commit()
+
+             # Mostrar mensaje de éxito
+            flash('El seguimiento ha sido enviado exitosamente.', 'success')
+            
+             # Redirigir a la URL desde la que se envió el formulario
+            return redirect(request.referrer or url_for('problemas_en_proceso'))
+
+        else:
+            return "No se encontró el problema con el ticket ID proporcionado", 404
+
+    except KeyError as e:
+        print(f"KeyError: {e}")
+        return "Falta un campo en el formulario", 400
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return "Ocurrió un error inesperado", 500
+    
+@app.route('/check_notifications', methods=['GET'])
+def check_notifications():
+    today = datetime.now().date()
+    start_of_day = datetime.combine(today, datetime.min.time())
+    end_of_day = datetime.combine(today, datetime.max.time())
+
+    seguimientos_hoy = Problema.query.filter(Problema.ultima_fecha_seguimiento.between(start_of_day, end_of_day)).all()
+    
+    new_notifications = len(seguimientos_hoy) > 0
+
+    return jsonify({
+        'new_notifications': new_notifications,
+        'seguimientos_hoy': [
+            {
+                'ticket_id': seguimiento.ticket_id,
+                'unidad_medica': seguimiento.unidad_medica,
+                'descripcion': seguimiento.descripcion,
+                'seguimiento': seguimiento.seguimiento,
+                'fecha': seguimiento.ultima_fecha_seguimiento.strftime("%Y-%m-%d %H:%M:%S")
+            } for seguimiento in seguimientos_hoy
+        ]
+    })
 
 if __name__ == '__main__':
     app.run(debug=True)
-
-
-

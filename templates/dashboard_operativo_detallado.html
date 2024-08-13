@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Operativo Detallado - ISSSTE</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        /* Additional styles */
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+
+        header {
+            background-color: #9e213d;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .container {
+            width: 90%;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px 0 rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+        }
+
+        button, input[type="submit"], a.button {
+            background-color: #a3092f;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin-top: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        button:hover, input[type="submit"]:hover, a.button:hover {
+            background-color: #c4143d;
+        }
+
+        .form-input {
+            margin: 10px 0;
+            padding: 12px;
+            width: calc(100% - 24px);
+            display: block;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            box-sizing: border-box;
+            color: black;
+            background-color: white;
+            font-size: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+
+        .form-legend {
+            font-size: 14px;
+            color: #555;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .table-container {
+            width: 100%;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        @media (max-width: 768px) {
+            th, td {
+                font-size: 14px;
+                padding: 4px;
+            }
+
+            td button {
+                width: 100%;
+            }
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding-top: 50px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 30px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            border-radius: 10px;
+            overflow-y: auto;
+            box-sizing: border-box;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover, .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .filter-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+        }
+
+        .filter-input {
+            padding: 8px;
+            width: calc(100% - 16px);
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        /* Estilos para el select */
+        select.form-input {
+            background-color: #6F7271;
+            color: white;
+        }
+
+        select.form-input option {
+            background-color: white;
+            color: black;
+        }
+
+        /* Estilo del mensaje de bienvenida */
+        .welcome-message {
+            background-color: #BC955C;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        /* Estilos adicionales para el textarea */
+        textarea.form-input {
+            color: black;
+            background-color: white;
+        }
+
+        footer {
+            background-color: #BC955C;
+            color: #fff;
+            padding: 3px;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
+            font-size: 12px;
+        }
+
+        /* Enlace para ticket_id */
+        .ticket-id-link {
+            color: #BC955C;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .ticket-id-link:hover {
+            color: #9E7B4F;
+        }
+
+        /* Estilo especial para el cuadro de estado */
+        .estado-cuadro {
+            background-color: #F0F0F0;
+            border: 1px solid #CCC;
+            border-radius: 5px;
+            padding: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        /* Estilo especial para las actualizaciones */
+        .actualizaciones {
+            white-space: pre-wrap;
+        }
+
+        /* Estilo para nuevas notificaciones */
+        .new-seguimiento {
+            background-color: #ffcccc;
+        }
+    </style>
+</head>
+<body>
+<header>
+    <h1>Dashboard Operativo Detallado - ISSSTE</h1>
+    <div style="position: absolute; top: 10px; right: 20px;">
+        <span id="notificationIcon" style="cursor: pointer;">
+            🔔 <!-- Puedes reemplazarlo con un icono más sofisticado -->
+        </span>
+        <a href="/logout" class="button">Cerrar Sesión</a>
+    </div>
+</header>
+<div class="container">
+    {% if welcome_message %}
+        <div class="welcome-message">
+            {{ welcome_message }}
+        </div>
+    {% endif %}
+    <button id="reportarProblemaBtn">Reportar Problema</button>
+
+    <div id="reportarProblemaModal" class="modal">
+        <div class="modal-content">
+            <span id="closeModal" class="close">&times;</span>
+            <h2>Reportar Problema</h2>
+            <form action="/reportar_problema_detallado" method="post" enctype="multipart/form-data">
+                <label for="estado">Estado:</label>
+                <div class="estado-cuadro">{{ estado_asignado }}</div> <!-- Cuadro de estado con estilo especial -->
+                <input type="hidden" name="estado" value="{{ estado_asignado }}">
+            
+                <label for="unidad_medica">Unidad Médica:</label>
+                <select name="unidad_medica" id="unidad_medica" class="form-input" required>
+                    <option value="">Seleccione una Unidad Médica</option>
+                    {% for unidad in unidades_medicas %}
+                        <option value="{{ unidad }}">{{ unidad }}</option>
+                    {% endfor %}
+                </select>
+            
+                <label for="categoria_problema">Categoría del Problema:</label>
+                <select name="categoria_problema" id="categoria_problema" class="form-input" onchange="mostrarFormularioCategoria()" required>
+                    <option value="">Seleccione una Categoría</option>
+                    <option value="Equipo Médico">Equipo Médico</option>
+                    <option value="Elevadores">Elevadores</option>
+                    <option value="Aire Acondicionado">Aire Acondicionado</option>
+                    <option value="Infraestructura">Infraestructura</option>
+                </select>
+            
+                <label for="tipo_reporte">Tipo de Reporte:</label>
+                <select name="tipo_reporte" id="tipo_reporte" class="form-input" onchange="mostrarFormularioCategoria()" required>
+                    <option value="">Seleccione un Tipo de Reporte</option>
+                    <option value="Preventivo">Preventivo</option>
+                    <option value="Correctivo">Correctivo</option>
+                    <option value="Informativo">Informativo</option> <!-- Solo aplicable a Infraestructura -->
+                </select>
+            
+                <!-- Formularios según la categoría y tipo de reporte -->
+                <div id="formulario_equipo_medico_preventivo" style="display:none;">
+                    <label for="nombre_equipo_preventivo">Nombre del equipo                    :</label>
+                    <input type="text" id="nombre_equipo_preventivo" name="nombre_equipo_preventivo" class="form-input" required>
+                    <span class="form-legend">Ingresa el nombre completo del equipo médico que está siendo reportado.</span>
+                    
+                    <label for="marca_preventivo">Marca:</label>
+                    <input type="text" id="marca_preventivo" name="marca_preventivo" class="form-input" required>
+                    <span class="form-legend">Especifica la marca del equipo médico.</span>
+                    
+                    <label for="numero_serie_preventivo">Número de serie:</label>
+                    <input type="text" id="numero_serie_preventivo" name="numero_serie_preventivo" class="form-input" required>
+                    <span class="form-legend">Indica el número de serie del equipo, el cual se encuentra generalmente en una etiqueta en el dispositivo.</span>
+                    
+                    <label for="numero_inventario_preventivo">Número de inventario:</label>
+                    <input type="text" id="numero_inventario_preventivo" name="numero_inventario_preventivo" class="form-input" required>
+                    <span class="form-legend">Proporciona el número de inventario del equipo, si lo tiene asignado.</span>
+                    
+                    <label for="causa_falla_preventivo">¿Cuál es la causa de la falla?:</label>
+                    <textarea id="causa_falla_preventivo" name="causa_falla_preventivo" class="form-input" required></textarea>
+                    <span class="form-legend">Describe en detalle la causa de la falla que presenta el equipo.</span>
+                    
+                    <label for="fotografia_preventivo">Fotografía:</label>
+                    <input type="file" id="fotografia_preventivo" name="fotografia_preventivo" class="form-input" required>
+                    <span class="form-legend">Sube una fotografía que muestre claramente la falla del equipo.</span>
+                    
+                    <label for="no_bitacora_preventivo">No. bitácora:</label>
+                    <input type="text" id="no_bitacora_preventivo" name="no_bitacora_preventivo" class="form-input" required>
+                    <span class="form-legend">Especifica el número de bitácora relacionado con este reporte.</span>
+                    
+                    <label for="bitacora_pdf_preventivo">Bitácora escaneada en formato del ISSSTE PDF:</label>
+                    <input type="file" id="bitacora_pdf_preventivo" name="bitacora_pdf_preventivo" class="form-input" required>
+                    <span class="form-legend">Adjunta un archivo PDF con la bitácora escaneada según el formato del ISSSTE.</span>
+                    
+                    <label for="observaciones_preventivo">Observaciones:</label>
+                    <textarea id="observaciones_preventivo" name="observaciones_preventivo" class="form-input" required></textarea>
+                    <span class="form-legend">Incluye cualquier observación adicional relevante al reporte preventivo.</span>
+                    
+                    <label for="nombre_reportante_preventivo">Nombre de la persona que reporta:</label>
+                    <input type="text" id="nombre_reportante_preventivo" name="nombre_reportante_preventivo" class="form-input" required>
+                    <span class="form-legend">Ingresa el nombre completo de la persona que está reportando el problema.</span>
+                    
+                    <label for="telefono_reportante_preventivo">Teléfono de la persona que reporta:</label>
+                    <input type="text" id="telefono_reportante_preventivo" name="telefono_reportante_preventivo" class="form-input" required>
+                    <span class="form-legend">Proporciona un número de teléfono donde se pueda contactar al reportante.</span>
+                    
+                    <label for="correo_reportante_preventivo">Correo:</label>
+                    <input type="email" id="correo_reportante_preventivo" name="correo_reportante_preventivo" class="form-input" required>
+                    <span class="form-legend">Indica una dirección de correo electrónico para comunicaciones adicionales.</span>
+                    
+                    <label for="fecha_levantamiento_preventivo">Fecha de levantamiento:</label>
+                    <input type="date" id="fecha_levantamiento_preventivo" name="fecha_levantamiento_preventivo" class="form-input" required>
+                    <span class="form-legend">Selecciona la fecha en la que se levantó el reporte preventivo.</span>
+                    
+                    <label for="fecha_reparacion_preventivo">Fecha de la reparación:</label>
+                    <input type="date" id="fecha_reparacion_preventivo" name="fecha_reparacion_preventivo" class="form-input" required>
+                    <span class="form-legend">Proporciona la fecha en la que se realizó la reparación, si aplica.</span>
+                </div>
+
+                <!-- Formulario para Correctivo en Equipo Médico -->
+                <div id="formulario_equipo_medico_correctivo" style="display:none;">
+                    <label for="nombre_equipo_correctivo">Nombre del equipo:</label>
+                    <input type="text" id="nombre_equipo_correctivo" name="nombre_equipo_correctivo" class="form-input" required>
+                    <span class="form-legend">Ingresa el nombre completo del equipo médico que está siendo reportado.</span>
+                    
+                    <label for="marca_correctivo">Marca:</label>
+                    <input type="text" id="marca_correctivo" name="marca_correctivo" class="form-input" required>
+                    <span class="form-legend">Especifica la marca del equipo médico.</span>
+                    
+                    <label for="numero_serie_correctivo">Número de serie:</label>
+                    <input type="text" id="numero_serie_correctivo" name="numero_serie_correctivo" class="form-input" required>
+                    <span class="form-legend">Indica el número de serie del equipo, el cual se encuentra generalmente en una etiqueta en el dispositivo.</span>
+                    
+                    <label for="numero_inventario_correctivo">Número de inventario:</label>
+                    <input type="text" id="numero_inventario_correctivo" name="numero_inventario_correctivo" class="form-input" required>
+                    <span class="form-legend">Proporciona el número de inventario del equipo, si lo tiene asignado.</span>
+                    
+                    <label for="causa_falla_correctivo">¿Cuál es la causa de la falla?:</label>
+                    <textarea id="causa_falla_correctivo" name="causa_falla_correctivo" class="form-input" required></textarea>
+                    <span class="form-legend">Describe en detalle la causa de la falla que presenta el equipo.</span>
+                    
+                    <label for="pieza_reemplazada">Indicar la pieza que se reemplaza:</label>
+                    <input type="text" id="pieza_reemplazada" name="pieza_reemplazada" class="form-input" required>
+                    <span class="form-legend">Especifica qué pieza fue reemplazada durante la reparación correctiva.</span>
+                    
+                    <label for="fotografia_correctivo">Fotografía:</label>
+                    <input type="file" id="fotografia_correctivo" name="fotografia_correctivo" class="form-input" required>
+                    <span class="form-legend">Sube una fotografía que muestre claramente la falla del equipo.</span>
+                    
+                    <label for="no_bitacora_correctivo">No. bitácora:</label>
+                    <input type="text" id="no_bitacora_correctivo" name="no_bitacora_correctivo" class="form-input" required>
+                    <span class="form-legend">Especifica el número de bitácora relacionado con este reporte.</span>
+                    
+                    <label for="bitacora_pdf_correctivo">Bitácora escaneada en formato del ISSSTE PDF:</label>
+                    <input type="file" id="bitacora_pdf_correctivo" name="bitacora_pdf_correctivo" class="form-input" required>
+                    <span class="form-legend">Adjunta un archivo PDF con la bitácora escaneada según el formato del ISSSTE.</span>
+                    
+                    <label for="observaciones_correctivo">Observaciones:</label>
+                    <textarea id="observaciones_correctivo" name="observaciones_correctivo" class="form-input" required></textarea>
+                    <span class="form-legend">Incluye cualquier observación adicional relevante al reporte correctivo.</span>
+                    
+                    <label for="nombre_reportante_correctivo">Nombre de la persona que reporta:</label>
+                    <input type="text" id="nombre_reportante_correctivo" name="nombre_reportante_correctivo" class="form-input" required>
+                    <span class="form-legend">Ingresa el nombre completo de la persona que está reportando el problema.</span>
+                    
+                    <label for="telefono_reportante_correctivo">Teléfono de la persona que reporta:</label>
+                    <input type="text" id="telefono_reportante_correctivo" name="telefono_reportante_correctivo" class="form-input" required>
+                    <span class="form-legend">Proporciona un número de teléfono donde se pueda contactar al reportante.</span>
+                    
+                    <label for="correo_reportante_correctivo">Correo:</label>
+                    <input type="email                    " id="correo_reportante_correctivo" name="correo_reportante_correctivo" class="form-input" required>
+                    <span class="form-legend">Indica una dirección de correo electrónico para comunicaciones adicionales.</span>
+                    
+                    <label for="fecha_levantamiento_correctivo">Fecha de levantamiento:</label>
+                    <input type="date" id="fecha_levantamiento_correctivo" name="fecha_levantamiento_correctivo" class="form-input" required>
+                    <span class="form-legend">Selecciona la fecha en la que se levantó el reporte correctivo.</span>
+                    
+                    <label for="fecha_reparacion_correctivo">Fecha de la reparación:</label>
+                    <input type="date" id="fecha_reparacion_correctivo" name="fecha_reparacion_correctivo" class="form-input" required>
+                    <span class="form-legend">Proporciona la fecha en la que se realizó la reparación, si aplica.</span>
+                </div>
+
+                <!-- Formulario para Preventivo en Elevadores y Aire Acondicionado -->
+                <div id="formulario_elevadores_preventivo" style="display:none;">
+                    <label for="nombre_empresa_elevadores_preventivo">Nombre de la empresa:</label>
+                    <input type="text" id="nombre_empresa_elevadores_preventivo" name="nombre_empresa_elevadores_preventivo" class="form-input" required>
+                    <span class="form-legend">Indica el nombre de la empresa encargada del mantenimiento preventivo.</span>
+
+                    <label for="nombre_equipo_elevadores_preventivo">Nombre del equipo:</label>
+                    <input type="text" id="nombre_equipo_elevadores_preventivo" name="nombre_equipo_elevadores_preventivo" class="form-input" required>
+                    <span class="form-legend">Especifica el nombre del equipo de elevadores o aire acondicionado que está siendo reportado.</span>
+
+                    <label for="marca_elevadores_preventivo">Marca:</label>
+                    <input type="text" id="marca_elevadores_preventivo" name="marca_elevadores_preventivo" class="form-input" required>
+                    <span class="form-legend">Indica la marca del equipo.</span>
+
+                    <label for="numero_serie_elevadores_preventivo">Número de serie:</label>
+                    <input type="text" id="numero_serie_elevadores_preventivo" name="numero_serie_elevadores_preventivo" class="form-input" required>
+                    <span class="form-legend">Proporciona el número de serie del equipo, generalmente visible en una etiqueta en el dispositivo.</span>
+
+                    <label for="numero_inventario_elevadores_preventivo">Número de inventario:</label>
+                    <input type="text" id="numero_inventario_elevadores_preventivo" name="numero_inventario_elevadores_preventivo" class="form-input" required>
+                    <span class="form-legend">Indica el número de inventario asignado al equipo, si aplica.</span>
+
+                    <label for="causa_falla_elevadores_preventivo">¿Cuál es la causa de la falla?:</label>
+                    <textarea id="causa_falla_elevadores_preventivo" name="causa_falla_elevadores_preventivo" class="form-input" required></textarea>
+                    <span class="form-legend">Describe la causa de la falla observada durante el mantenimiento preventivo.</span>
+
+                    <label for="observaciones_elevadores_preventivo">Observaciones:</label>
+                    <textarea id="observaciones_elevadores_preventivo" name="observaciones_elevadores_preventivo" class="form-input" required></textarea>
+                    <span class="form-legend">Proporciona cualquier observación adicional relevante al mantenimiento preventivo.</span>
+
+                    <label for="fotografia_elevadores_preventivo">Fotografía:</label>
+                    <input type="file" id="fotografia_elevadores_preventivo" name="fotografia_elevadores_preventivo" class="form-input" required>
+                    <span class="form-legend">Adjunta una fotografía que ilustre la falla o el estado del equipo.</span>
+
+                    <label for="no_bitacora_elevadores_preventivo">No. bitácora:</label>
+                    <input type="text" id="no_bitacora_elevadores_preventivo" name="no_bitacora_elevadores_preventivo" class="form-input" required>
+                    <span class="form-legend">Especifica el número de bitácora asociado con este mantenimiento preventivo.</span>
+
+                    <label for="bitacora_pdf_elevadores_preventivo">Bitácora escaneada en formato del ISSSTE PDF:</label>
+                    <input type="file" id="bitacora_pdf_elevadores_preventivo" name="bitacora_pdf_elevadores_preventivo" class="form-input" required>
+                    <span class="form-legend">Sube un archivo PDF con la bitácora escaneada según el formato requerido.</span>
+                </div>
+
+                <!-- Formulario para Correctivo en Elevadores y Aire Acondicionado -->
+                <div id="formulario_elevadores_correctivo" style="display:none;">
+                    <label for="nombre_empresa_elevadores_correctivo">Nombre de la empresa:</label>
+                    <input type="text" id="nombre_empresa_elevadores_correctivo" name="nombre_empresa_elevadores_correctivo" class="form-input" required>
+                    <span class="form-legend">Indica el nombre de la empresa encargada del mantenimiento correctivo.</span>
+
+                    <label for="nombre_equipo_elevadores_correctivo">Nombre del equipo:</label>
+                    <input type="text" id="nombre_equipo_elevadores_correctivo" name="nombre_equipo_elevadores_correctivo" class="form-input" required>
+                    <span class="form-legend">Especifica el nombre del equipo de elevadores o aire acondicionado que está siendo reportado.</span>
+
+                    <label for="marca_elevadores_correctivo">Marca:</label>
+                    <input type="text" id="marca_elevadores_correctivo" name="marca_elevadores_correctivo" class="form-input" required>
+                    <span class="form-legend">Indica la marca del equipo.</span>
+
+                    <label for="numero_serie_elevadores_correctivo">Número de serie:</label>
+                    <input type="text" id="numero_serie_elevadores_correctivo" name="numero_serie_elevadores_correctivo" class="form-input" required>
+                    <span class="form-legend">Proporciona el número de serie del equipo, generalmente visible en una etiqueta en el dispositivo.</span>
+
+                    <label for="numero_inventario_elevadores_correctivo">Número de inventario:</label>
+                    <input type="text" id="numero_inventario_elevadores_correctivo" name="numero_inventario_elevadores_correctivo" class="form-input" required>
+                    <span class="form-legend">Indica el número de inventario asignado al equipo, si aplica.</span>
+
+                    <label for="causa_falla_elevadores_correctivo">¿Cuál es la causa de la falla?:</label>
+                    <textarea id="causa_falla_elevadores_correctivo" name="causa_falla_elevadores_correctivo" class="form-input" required></textarea>
+                    <span class="form-legend">Describe la causa de la falla observada durante el mantenimiento correctivo.</span>
+
+                    <label for="pieza_reemplazada_elevadores_correctivo">Indicar la pieza que se reemplaza:</label>
+                    <input type="text" id="pieza_reemplazada_elevadores_correctivo" name="pieza_reemplazada_elevadores_correctivo" class="form-input" required>
+                    <span class="form-legend">Especifica cuál pieza fue reemplazada durante la reparación.</span>
+
+                    <label for="fotografia_elevadores_correctivo">Fotografía:</label>
+                    <input type="file" id="fotografia_elevadores_correctivo" name="fotografia_elevadores_correctivo" class="form-input" required>
+                    <span class="form-legend">Adjunta una fotografía que ilustre la falla o el estado del equipo.</span>
+
+                    <label for="no_bitacora_elevadores_correctivo">No. bitácora:</label>
+                    <input type="text" id="no_bitacora_elevadores_correctivo" name="no_bitacora_elevadores_correctivo" class="form-input" required>
+                    <span class="form-legend">Especifica el número de bitácora asociado con este mantenimiento correctivo.</span>
+
+                    <label for="bitacora_pdf_elevadores_correctivo">Bitácora escaneada en formato del ISSSTE PDF:</label>
+                    <input type="file" id="bitacora_pdf_elevadores_correctivo" name="bitacora_pdf_elevadores_correctivo" class="form-input" required>
+                    <span class="form-legend">Sube un archivo PDF con la bitácora escaneada según el formato requerido.</span>
+                </div>
+
+                <!-- Formulario para Informativo en Infraestructura -->
+                <div id="formulario_infraestructura_informativo" style="display:none;">
+                    <label for="area_afectada_informativo">Área afectada:</label>
+                    <input type="text" id="area_af                    ectada_informativo" name="area_afectada_informativo" class="form-input" required>
+                    <span class="form-legend">Especifica el área de la infraestructura que está afectada.</span>
+
+                    <label for="causa_area_afectada_informativo">Causa del área afectada:</label>
+                    <textarea id="causa_area_afectada_informativo" name="causa_area_afectada_informativo" class="form-input" required></textarea>
+                    <span class="form-legend">Describe la causa que llevó a la afectación del área.</span>
+
+                    <label for="se_puede_trabajar_informativo">¿Se puede trabajar?</label>
+                    <select id="se_puede_trabajar_informativo" name="se_puede_trabajar_informativo" class="form-input" required>
+                        <option value="No">No</option>
+                        <option value="Si">Sí</option>
+                    </select>
+                    <span class="form-legend">Indica si el área afectada permite que se continúe trabajando en ella.</span>
+
+                    <label for="dia_cierre_informativo">Indicar el día de cierre del área (si aplica):</label>
+                    <input type="date" id="dia_cierre_informativo" name="dia_cierre_informativo" class="form-input">
+                    <span class="form-legend">Selecciona la fecha en la que el área fue cerrada debido a la afectación.</span>
+
+                    <label for="dia_apertura_informativo">Indicar el día de apertura del área (si aplica):</label>
+                    <input type="date" id="dia_apertura_informativo" name="dia_apertura_informativo" class="form-input">
+                    <span class="form-legend">Selecciona la fecha en la que se reabrirá el área una vez resuelto el problema.</span>
+
+                    <label for="observaciones_informativo">Observaciones:</label>
+                    <textarea id="observaciones_informativo" name="observaciones_informativo" class="form-input" required></textarea>
+                    <span class="form-legend">Incluye cualquier observación adicional sobre la afectación de la infraestructura.</span>
+
+                    <label for="fotografia_informativo">Reporte fotográfico:</label>
+                    <input type="file" id="fotografia_informativo" name="fotografia_informativo" class="form-input" required>
+                    <span class="form-legend">Sube una fotografía que muestre claramente la afectación en el área.</span>
+
+                    <label for="no_bitacora_informativo">No. bitácora:</label>
+                    <input type="text" id="no_bitacora_informativo" name="no_bitacora_informativo" class="form-input" required>
+                    <span class="form-legend">Especifica el número de bitácora relacionado con este reporte informativo.</span>
+
+                    <label for="bitacora_pdf_informativo">Bitácora escaneada en formato del ISSSTE PDF:</label>
+                    <input type="file" id="bitacora_pdf_informativo" name="bitacora_pdf_informativo" class="form-input" required>
+                    <span class="form-legend">Sube un archivo PDF con la bitácora escaneada según el formato del ISSSTE.</span>
+                </div>
+
+                <input type="hidden" name="fecha_hora" id="fecha_hora">
+                <input type="submit" value="Reportar Problema">
+            </form>
+        </div>
+    </div>
+
+    <div class="filter-container">
+        <label for="filtroUnidadMedica">Filtrar por Unidad Médica:</label>
+        <input type="text" id="filtroUnidadMedica" class="filter-input" placeholder="Ingrese la Unidad Médica para filtrar">
+    </div>
+
+    <h2>Problemas Reportados</h2>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Ticket ID</th>
+                    <th>Unidad Médica</th>
+                    <th>Descripción</th>
+                    <th>Estado</th>
+                    <th>Actualizaciones</th>
+                    <th>Seguimiento</th>
+                </tr>
+            </thead>
+            <tbody id="problemasTable">
+                {% for problema in problemas %}
+                <tr class="{% if problema.ultima_fecha_seguimiento and session.get('last_loaded') and problema.ultima_fecha_seguimiento > session.get('last_loaded') %}new-seguimiento{% endif %}">
+                    <td class="ticket-id-link" data-ticket="{{ problema.ticket_id }}">{{ problema.ticket_id }}</td>
+                    <td>{{ problema.unidad_medica }}</td>
+                    <td>{{ problema.descripcion }}</td>
+                    <td>{{ problema.aceptado if problema.aceptado else 'Pendiente' }}</td>
+                    <td class="actualizaciones">{% if problema.actualizaciones %}{{ problema.actualizaciones | replace('\n', '<br>') | safe }}{% else %}Sin actualizaciones{% endif %}</td>
+                    <td>{% if problema.seguimiento %}{{ problema.seguimiento|replace('\n', '<br>')|safe }}{% else %}Sin seguimiento{% endif %}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal para ver detalles del problema -->
+<div id="detalleProblemaModal" class="modal">
+    <div class="modal-content">
+        <span id="closeDetalleModal" class="close">&times;</span>
+        <h2>Detalles del Problema</h2>
+        <div id="detalleContenido">
+            <!-- Los detalles del problema se llenarán aquí dinámicamente -->
+        </div>
+        <h3>Actualizar Problema</h3>
+        <form action="/actualizar_ticket" method="post" enctype="multipart/form-data">
+            <input type="hidden" id="detalleTicketId" name="ticket_id">
+            
+            <label for="numero_empleado">Número de Empleado:</label>
+            <input type="text" id="numero_empleado" name="numero_empleado" class="form-input" required oninput="fetchEmployeeDetails(this.value)">
+            <small>Ingrese su número de empleado para autenticar la actualización.</small>
+            
+            <label for="nombre_empleado">Nombre del Empleado:</label>
+            <input type="text" id="nombre_empleado" name="nombre_empleado" class="form-input" readonly>
+            <small>Este campo se llenará automáticamente basado en el número de empleado.</small>
+            
+            <label for="puesto_empleado">Puesto del Empleado:</label>
+            <input type="text" id="puesto_empleado" name="puesto_empleado" class="form-input" readonly>
+            <small>Este campo se llenará automáticamente basado en el número de empleado.</small>
+            
+            <label for="nueva_actualizacion">Nueva Actualización:</label>
+            <textarea name="nueva_actualizacion" id="nueva_actualizacion" class="form-input" placeholder="Ingrese los detalles de la actualización" required></textarea>
+            
+            <label for="archivo">Archivo Adjunto:</label>
+            <input type="file" id="archivo" name="archivo" class="form-input">
+            
+            <input type="hidden" name="fecha_hora_actualizacion" id="fecha_hora_actualizacion">
+            <input type="submit" value="Actualizar">
+        </form>
+    </div>
+</div>
+
+<!-- Modal para ver nuevas notificaciones -->
+<div id="notificationModal" class="modal">
+    <div class="modal-content">
+        <span id="closeNotificationModal" class="close">&times;</span>
+        <h2>Nuevos Seguimientos</h2>
+        <div id="notificationModalContent">
+            <!-- El contenido de los seguimientos se llenará aquí -->
+        </div>
+    </div>
+</div>
+
+<footer>
+    <p>Todos los derechos reservados - ISSSTE</p>
+</footer>
+
+<script>
+    function mostrarFormularioCategoria() {
+        const categoria = document.getElementById('categoria_problema').value;
+        const tipoReporte = document.getElementById('tipo_reporte').value;
+        
+        // Ocultar todos los formularios inicialmente
+        document.getElementById('formulario_equipo_medico_preventivo').style.display = 'none';
+        document.getElementById('formulario_equipo_medico_correctivo').style.display = 'none';
+        document.getElementById('formulario_elevadores_preventivo').style.display = 'none';
+        document.getElementById('formulario_elevadores_correctivo').style.display = 'none';
+        document.getElementById('formulario_infraestructura_informativo').style.display = 'none';
+
+        if (categoria === 'Equipo Médico') {
+            if (tipoReporte === 'Preventivo') {
+                document.getElementById('formulario_equipo_medico_preventivo').style.display = 'block';
+            } else if (tipoReporte === 'Correctivo') {
+                document.getElementById('formulario_equipo_medico_correctivo').style.display = 'block';
+            }
+        } else if (categoria === 'Elevadores' || categoria === 'Aire Acondicionado') {
+            if (tipoReporte === 'Preventivo') {
+                document.getElementById('formulario_elevadores_preventivo').style.display = 'block';
+            } else if (tipoReporte === 'Correctivo') {
+                document.getElementById('formulario_elevadores_correctivo').style.display = 'block';
+            }
+        } else if (categoria === 'Infraestructura' && tipoReporte === 'Informativo') {
+            document.getElementById('formulario_infraestructura_informativo').style.display = 'block';
+        }
+    }
+
+    // Funcionalidad del modal para reportar problema
+    var modal = document.getElementById("reportarProblemaModal");
+    var btn = document.getElementById("reportarProblemaBtn");
+    var span = document.getElementById("closeModal");
+
+    btn.onclick = function() {
+        modal.style.display = "block";
+        setCurrentDateTime('fecha_hora');
+    }
+
+    span.onclick = function() {
+        modal.style.display = "none";
+    }
+
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            modal.style.display = "none";
+        }
+    }
+
+    // Funcionalidad del modal para ver detalles del problema
+    var detalleModal = document.getElementById("detalleProblemaModal");
+    var closeDetalleModal = document.getElementById("closeDetalleModal");
+
+    closeDetalleModal.onclick = function() {
+        detalleModal.style.display = "none";
+    }
+
+    window.onclick = function(event) {
+        if (event.target == detalleModal) {
+            detalleModal.style.display = "none";
+        }
+    }
+
+    // Asignar evento de click a los enlaces de los tickets
+    document.querySelectorAll('.ticket-id-link').forEach(item => {
+        item.addEventListener('click', event => {
+            const ticketId = event.target.getAttribute('data-ticket');
+            // Llamar al servidor para obtener los detalles del problema
+            $.ajax({
+                url: `/get_problem_details/${ticketId}`,
+                method: 'GET',
+                success: function(data) {
+                    showProblemDetails(data);
+                },
+                error: function() {
+                    alert('Error al cargar los detalles del problema.');
+                }
+            });
+        });
+    });
+
+    function showProblemDetails(details) {
+        const actualizaciones = details.actualizaciones ? details.actualizaciones.split('\n').map(line => `<p>${line}</p>`).join('') : "Sin Actualizaciones";
+        const contenido = `
+            <p><strong>Ticket ID:</strong> ${details.ticket_id}</p>
+            <p><strong>Unidad Médica:</strong> ${details.unidad_medica}</p>
+            <p><strong>Descripción:</strong> ${details.descripcion}</p>
+            <p><strong>Estado:</strong> ${details.aceptado}</p>
+            <p><strong>Actualizaciones:</strong> ${actualizaciones}</p>
+            <p><strong>Nivel de Riesgo:</strong> ${details.nivel_riesgo}</p>
+            <p><strong>Fecha y Hora:</strong> ${details.fecha_hora}</p>
+            <p><strong>Nombre de quien reporta:</strong> ${details.nombre_reportante}</p>
+            <p><strong>Responsable del problema:</strong> ${details.responsable_problema}</p>
+            <p><strong>Correo Electrónico:</strong> ${details.correo_electronico}</p>
+            <p><strong>Archivo Adjunto:</strong> ${details.archivo ? `<a href="/uploads/${details.archivo}" target="_blank">${details.archivo}</a>` : 'No hay archivo adjunto'}</p>
+            <p><strong>Seguimiento:</strong> ${details.seguimiento ? details.seguimiento.replace(/\n/g, '<br>') : 'Sin Seguimiento'}</p>
+        `;
+        document.getElementById('detalleContenido').innerHTML = contenido;
+        document.getElementById('detalleTicketId').value = details.ticket_id;
+        detalleModal.style.display = "block";
+    }
+
+    // Funcionalidad de filtro
+    document.getElementById('filtroUnidadMedica').addEventListener('input', function() {
+        var filter = this.value.toUpperCase();
+        var rows = document.getElementById("problemasTable").getElementsByTagName("tr");
+
+        for (var i = 0; i < rows.length; i++) {
+            var td = rows[i].getElementsByTagName("td")[1]; // Unidad Médica column
+            if (td) {
+                var txtValue = td.textContent || td.innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    rows[i].style.display = "";
+                } else {
+                    rows[i].style.display = "none";
+                }
+            }
+        }
+    });
+
+    // Función para establecer la fecha y hora actual en los campos de fecha y hora
+    function setCurrentDateTime(inputId) {
+        var now = new Date();
+        var formattedDate = now.getFullYear() + '-' +
+                            ('0' + (now.getMonth() + 1)).slice(-2) + '-' +
+                            ('0' + now.getDate()).slice(-2) + ' ' +
+                            ('0' + now.getHours()).slice(-2) + ':' +
+                            ('0' + now.getMinutes()).slice(-2) + ':' +
+                            ('0' + now.getSeconds()).slice(-2);
+        document.getElementById(inputId).value = formattedDate;
+    }
+
+    // Establecer la fecha y hora actual cuando se abre el modal para reportar problema
+    btn.onclick = function() {
+        modal.style.display = "block";
+        setCurrentDateTime('fecha_hora');
+    }
+
+    // Establecer la fecha y hora actual para las actualizaciones en el modal de detalles
+    document.querySelectorAll('form[action="/actualizar_ticket"]').forEach(form => {
+        form.addEventListener('submit', function() {
+            setCurrentDateTime('fecha_hora_actualizacion');
+        });
+    });
+
+    // Obtener detalles del empleado basado en el número de empleado
+    function fetchEmployeeDetails(numeroEmpleado) {
+        if (numeroEmpleado) {
+            $.ajax({
+                url: `/get_employee_details/${numeroEmpleado}`,
+                method: 'GET',
+                success: function(data) {
+                    if (data.nombre && data.puesto) {
+                        document.getElementById('nombre_empleado').value = data.nombre;
+                        document.getElementById('puesto_empleado').value = data.puesto;
+                    } else {
+                        document.getElementById('nombre_empleado').value = '';
+                        document.getElementById('puesto_empleado').value = '';
+                    }
+                },
+                error: function() {
+                    document.getElementById('nombre_empleado').value = '';
+                    document.getElementById('puesto_empleado').value = '';
+                }
+            });
+        } else {
+            document.getElementById('nombre_empleado').value = '';
+            document.getElementById('puesto_empleado').value = '';
+        }
+    }
+
+    function checkForNewNotifications() {
+        $.ajax({
+            url: '/check_notifications',
+            method: 'GET',
+            success: function(data) {
+                if (data.new_notifications) {
+                    $('#notificationIcon').text('🔔 (Nuevo)');
+                } else {
+                    $('#notificationIcon').text('🔔');
+                }
+                $('#notificationIcon').data('notifications', data.seguimientos_hoy); // Guardar las notificaciones para mostrarlas después
+            },
+            error: function() {
+                console.log('Error checking for notifications.');
+            }
+        });
+    }
+
+    function loadTodayNotifications() {
+        const notifications = $('#notificationIcon').data('notifications') || [];
+        let modalContent = '';
+        if (notifications.length > 0) {
+            modalContent += '<ul>';
+            notifications.forEach(function(notification) {
+                modalContent += `
+                    <li>
+                        <strong>Ticket ID:</strong> ${notification.ticket_id}<br>
+                        <strong>Unidad Médica:</strong> ${notification.unidad_medica}<br>
+                        <strong>Descripción:</strong> ${notification.descripcion}<br>
+                        <strong>Seguimiento:</strong> ${notification.seguimiento.replace(/\n/g, '<br>')}<br>
+                        <strong>Fecha:</strong> ${notification.fecha}<br>
+                    </li>
+                    <hr>`;
+            });
+            modalContent += '</ul>';
+        } else {
+            modalContent = '<p>No hay nuevos seguimientos hoy.</p>';
+        }
+        $('#notificationModalContent').html(modalContent);
+        $('#notificationModal').show();
+    }
+
+    $(document).ready(function() {
+        checkForNewNotifications();
+
+        // Repite la verificación cada 60 segundos
+        setInterval(checkForNewNotifications, 60000);
+
+        // Maneja el clic en la campana de notificaciones
+        $('#notificationIcon').click(function() {
+            loadTodayNotifications();
+        });
+
+        // Cerrar el modal
+        $('#closeNotificationModal').click(function() {
+            $('#notificationModal').hide();
+        });
+    });
+</script>
+</body>
+</html>
+
+
+
+

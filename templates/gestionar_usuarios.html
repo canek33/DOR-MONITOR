@@ -8,9 +8,53 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <link rel="stylesheet" href="/static/css/gestionar_usuarios.css">
+    <style>
+        body {
+            background-image: url('/static/images/ISSSTE_FONDO_BLANCO.jpg');
+            background-size: cover;
+            background-position: center;
+            font-family: Arial, sans-serif;
+        }
+        header {
+            background-color: #691C32;
+            color: white;
+            padding: 10px 0;
+        }
+        h1 {
+            margin: 0;
+        }
+        .btn-success, .btn-primary, .btn-secondary {
+            background-color: #BC955C;
+            border: none;
+        }
+        .btn-danger {
+            background-color: #691C32;
+            border: none;
+        }
+        .btn-success:hover, .btn-primary:hover, .btn-secondary:hover, .btn-danger:hover {
+            background-color: #6F7271;
+        }
+        .modal-header, .modal-footer {
+            background-color: #691C32;
+            color: white;
+        }
+        .modal-content {
+            border-radius: 10px;
+        }
+        .table thead {
+            background-color: #BC955C;
+            color: white;
+        }
+        .table tbody tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        .table tbody tr:nth-child(odd) {
+            background-color: white;
+        }
+    </style>
 </head>
 <body>
-<header class="bg-primary text-white text-center py-4">
+<header class="text-center py-4">
     <h1>Gestionar Usuarios Operativos y Administrativos</h1>
     <div style="position: absolute; top: 10px; right: 20px;">
         <a href="/dashboard" class="btn btn-secondary">Volver al Dashboard</a>
@@ -168,4 +212,3 @@
 </script>
 </body>
 </html>
-

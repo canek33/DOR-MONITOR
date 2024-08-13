@@ -3,49 +3,264 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Problemas En Proceso</title>
+    <title>Problemas en Proceso - ISSSTE</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <!-- Añadiendo Font Awesome para los iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="/static/css/dashboard_admin.css">
+    <style>
+        body {
+            background-image: url('/static/images/ISSSTE_FONDO_BLANCO.jpg');
+            background-attachment: fixed;
+            background-size: cover;
+            background-position: center;
+            font-family: Arial, sans-serif;
+        }
+        .table td, .table th {
+            padding: 5px;
+            vertical-align: middle;
+            word-wrap: break-word;
+        }
+        .small-column {
+            max-width: 150px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .risk-column {
+            max-width: 150px;
+            white-space: normal;
+            word-wrap: break-word;
+        }
+        header {
+            background-color: #691C32;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            position: relative;
+        }
+        header h1 {
+            margin: 0;
+        }
+        header a {
+            color: white;
+            text-decoration: none;
+            background-color: #BC955C;
+            padding: 8px 15px;
+            border-radius: 5px;
+            position: absolute;
+            top: 10px;
+        }
+        header a.logout {
+            left: 20px;
+        }
+        /* Estilos para los botones pequeños y minimalistas */
+        .btn-sm {
+            padding: 2px 6px;
+            font-size: 12px;
+        }
+        .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            border-radius: 50%;
+            background-color: #f8f9fa;
+            border: 1px solid #691C32;
+        }
+        .btn-icon i {
+            font-size: 14px;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1 class="text-center my-4">Problemas En Proceso</h1>
-        <table class="table table-bordered">
-            <thead class="thead-light">
-                <tr>
-                    <th>ID</th>
-                    <th>Unidad Médica</th>
-                    <th>Categoría</th>
-                    <th>Subcategoría</th>
-                    <th>Descripción</th>
-                    <th>Estado</th>
-                    <th>Nivel de Riesgo</th>
-                    <th>Actualizaciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% if problemas %}
-                {% for problema in problemas %}
-                <tr>
-                    <td>{{ problema.ticket_id }}</td>
-                    <td>{{ problema.unidad_medica }}</td>
-                    <td>{{ problema.categoria }}</td>
-                    <td>{{ problema.subcategoria }}</td>
-                    <td>{{ problema.descripcion }}</td>
-                    <td>{{ problema.estado }}</td>
-                    <td>{{ problema.nivel_riesgo }}</td>
-                    <td>{{ problema.actualizaciones }}</td>
-                </tr>
-                {% endfor %}
-                {% else %}
-                <tr>
-                    <td colspan="8" class="text-center">No hay problemas en proceso</td>
-                </tr>
-                {% endif %}
-            </tbody>
-        </table>
-        <div class="text-center">
-            <a href="/dashboard" class="btn btn-primary">Volver al Dashboard</a>
+    <header>
+        <a href="/dashboard" class="logout btn btn-secondary">Regresar al Dashboard</a>
+        <h1>Problemas en Proceso - ISSSTE</h1>
+    </header>
+    <!-- Aquí se mostrarán los mensajes de éxito o error -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="container mt-3">
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    {% endwith %}
+    <div class="container mt-4">
+        <div class="table-responsive">
+            <table class="table table-bordered table-sm">
+                <thead class="thead-light">
+                    <tr>
+                        <th>ID</th>
+                        <th class="small-column">Unidad Médica</th>
+                        <th>Categoría</th>
+                        <th>Subcategoría</th>
+                        <th>Descripción</th>
+                        <th>Estado</th>
+                        <th class="risk-column">Nivel de Riesgo</th>
+                        <th>Avances</th>
+                        <th>Seguimiento</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if problemas %}
+                    {% for problema in problemas %}
+                    <tr>
+                        <td><a href="#" data-toggle="modal" data-target="#modalProblema{{ problema.ticket_id }}">{{ problema.ticket_id }}</a></td>
+                        <td class="small-column">{{ problema.unidad_medica }}</td>
+                        <td>{{ problema.categoria }}</td>
+                        <td>{{ problema.subcategoria }}</td>
+                        <td>{{ problema.descripcion }}</td>
+                        <td>{{ problema.estado }}</td>
+                        <td class="risk-column">{{ problema.nivel_riesgo }}</td>
+                        <td>
+                            <button type="button" class="btn btn-info btn-icon btn-sm" data-toggle="modal" data-target="#avanceModal{{ problema.ticket_id }}">
+                                <i class="fas fa-pencil-alt"></i>
+                            </button>
+                        </td>
+                        <td>
+                            <form action="/enviar_seguimiento" method="post">
+                                <input type="hidden" name="ticket_id" value="{{ problema.ticket_id }}">
+                                <input type="hidden" name="redirect_url" value="{{ request.url }}"> <!-- Campo oculto con la URL actual -->
+                                <textarea class="form-control mb-2" name="mensaje_seguimiento" placeholder="Escribe el seguimiento aquí..." required></textarea>
+                                <button type="submit" class="btn btn-primary btn-icon btn-sm">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+
+                    <!-- Modal para ver los detalles del problema -->
+                    <div class="modal fade" id="modalProblema{{ problema.ticket_id }}" tabindex="-1" role="dialog" aria-labelledby="modalProblemaLabel{{ problema.ticket_id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="modalProblemaLabel{{ problema.ticket_id }}">Detalles del Problema - ID {{ problema.ticket_id }}</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <p><strong>Unidad Médica:</strong> {{ problema.unidad_medica }}</p>
+                                    <p><strong>Categoría:</strong> {{ problema.categoria }}</p>
+                                    <p><strong>Subcategoría:</strong> {{ problema.subcategoria }}</p>
+                                    <p><strong>Descripción:</strong> {{ problema.descripcion }}</p>
+                                    <p><strong>Estado:</strong> {{ problema.estado }}</p>
+                                    <p><strong>Nivel de Riesgo:</strong> {{ problema.nivel_riesgo }}</p>
+                                    <p><strong>Avances:</strong> {{ problema.avances | replace('\n', '<br>') | safe if problema.avances else 'Sin Avances' }}</p>
+                                    <p><strong>Seguimiento:</strong> {{ problema.seguimiento|replace('\n', '<br>')|safe if problema.seguimiento else 'Sin Seguimiento' }}</p>
+                                    <p><strong>Actualizaciones:</strong> {{ problema.actualizaciones|replace('\n', '<br>')|safe if problema.actualizaciones else 'Sin Actualizaciones' }}</p>
+                                    <p><strong>Fecha y Hora:</strong> {{ problema.fecha_hora }}</p>
+                                    <p><strong>Nombre Reportante:</strong> {{ problema.nombre_reportante }}</p>
+                                    <p><strong>Responsable:</strong> {{ problema.responsable_problema }}</p>
+                                    <p><strong>Correo Electrónico:</strong> {{ problema.correo_electronico }}</p>
+                                    <p><strong>Archivo Adjunto:</strong> {% if problema.archivo %}<a href="{{ url_for('static', filename='uploads/' ~ problema.archivo) }}" target="_blank">{{ problema.archivo }}</a>{% else %}No hay archivo adjunto{% endif %}</p>
+                                    <p><strong>Origen del Problema:</strong> {{ problema.origen }}</p>
+                                    <p><strong>Fecha Compromiso:</strong> {{ problema.fecha_compromiso if problema.fecha_compromiso else 'No especificada' }}</p>
+                                    <p><strong>Fecha de Solución:</strong> {{ problema.fecha_solucion if problema.fecha_solucion else 'No especificada' }}</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <form action="/cambiar_estado_problema" method="post" style="display:inline;">
+                                        <input type="hidden" name="ticket_id" value="{{ problema.ticket_id }}">
+                                        <select name="nuevo_estado" class="form-control mb-2">
+                                            <option value="Solucionado" {% if problema.estado_problema == 'Solucionado' %}selected{% endif %}>Solucionado</option>
+                                            <option value="No Solucionado" {% if problema.estado_problema == 'No Solucionado' %}selected{% endif %}>No Solucionado</option>
+                                            <option value="En Proceso" {% if problema.estado_problema == 'En Proceso' %}selected{% endif %}>En Proceso</option>
+                                        </select>
+                                        <input type="hidden" name="origen" value="{{ problema.origen }}">
+                                        <button type="submit" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-exchange-alt"></i> Cambiar Estado
+                                        </button>
+                                    </form>
+                                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cerrar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal para editar los avances -->
+                    <div class="modal fade" id="avanceModal{{ problema.ticket_id }}" tabindex="-1" role="dialog" aria-labelledby="avanceModalLabel{{ problema.ticket_id }}" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" role="document">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="avanceModalLabel{{ problema.ticket_id }}">Avance del Problema - ID {{ problema.ticket_id }}</h5>
+                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                        <span aria-hidden="true">&times;</span>
+                                    </button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="form-group">
+                                        <label for="fecha_avance_{{ problema.ticket_id }}">Seleccionar Fecha:</label>
+                                        <input type="date" class="form-control" id="fecha_avance_{{ problema.ticket_id }}" name="fecha_avance">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="detalle_avance_{{ problema.ticket_id }}">Detalle del Avance:</label>
+                                        <textarea class="form-control" id="detalle_avance_{{ problema.ticket_id }}" name="detalle_avance" rows="3"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="fecha_compromiso_{{ problema.ticket_id }}">Fecha Compromiso:</label>
+                                        <input type="date" class="form-control" id="fecha_compromiso_{{ problema.ticket_id }}" name="fecha_compromiso">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="fecha_solucion_{{ problema.ticket_id }}">Fecha de Solución:</label>
+                                        <input type="date" class="form-control" id="fecha_solucion_{{ problema.ticket_id }}" name="fecha_solucion">
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Cerrar</button>
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="guardarAvance('{{ problema.ticket_id }}')">
+                                        <i class="fas fa-save"></i> Guardar Avance
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center">No hay problemas en proceso</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
         </div>
     </div>
+
+    <script>
+        function guardarAvance(ticketId) {
+            const fecha = document.getElementById(`fecha_avance_${ticketId}`).value;
+            const detalle = document.getElementById(`detalle_avance_${ticketId}`).value;
+            const fechaCompromiso = document.getElementById(`fecha_compromiso_${ticketId}`).value;
+            const fechaSolucion = document.getElementById(`fecha_solucion_${ticketId}`).value;
+
+            if (fecha && detalle) {
+                $.post('/guardar_avance', {
+                    ticket_id: ticketId,
+                    fecha_avance: fecha,
+                    detalle_avance: detalle,
+                    fecha_compromiso: fechaCompromiso,
+                    fecha_solucion: fechaSolucion
+                }).done(function() {
+                    alert('Avance guardado exitosamente');
+                    location.reload(); // Recargar la página para mostrar los cambios
+                }).fail(function() {
+                    alert('Error al guardar el avance');
+                });
+            } else {
+                alert('Por favor, complete todos los campos');
+            }
+        }
+    </script>
 </body>
 </html>
