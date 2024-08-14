@@ -45,8 +45,8 @@ def cargar_unidades_medicas():
 unidades_medicas_data = cargar_unidades_medicas()
 
 # Configuración de pdfkit
-path_to_wkhtmltopdf = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'  # Cambia esto a la ruta donde está instalado wkhtmltopdf
-config = pdfkit.configuration(wkhtmltopdf=os.environ.get('WKHTMLTOPDF_BINARY', '/app/bin/wkhtmltopdf'))
+path_to_wkhtmltopdf = '/app/bin/wkhtmltopdf'  # Esta ruta debería funcionar en Heroku
+config = pdfkit.configuration(wkhtmltopdf=path_to_wkhtmltopdf)
 
 # Modelo Problema
 class Problema(db.Model):
