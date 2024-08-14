@@ -46,7 +46,7 @@ unidades_medicas_data = cargar_unidades_medicas()
 
 # Configuración de pdfkit
 path_to_wkhtmltopdf = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'  # Cambia esto a la ruta donde está instalado wkhtmltopdf
-config = pdfkit.configuration(wkhtmltopdf=path_to_wkhtmltopdf)
+config = pdfkit.configuration(wkhtmltopdf=os.environ.get('WKHTMLTOPDF_BINARY', '/app/bin/wkhtmltopdf'))
 
 # Modelo Problema
 class Problema(db.Model):
