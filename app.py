@@ -46,6 +46,8 @@ unidades_medicas_data = cargar_unidades_medicas()
 
 path_to_wkhtmltopdf = '/app/bin/wkhtmltopdf'
 config = pdfkit.configuration(wkhtmltopdf=path_to_wkhtmltopdf)
+# Uso de pdfkit con la configuración
+pdfkit.from_url('http://google.com', 'out.pdf', configuration=config)
 
 # Modelo Problema
 class Problema(db.Model):
