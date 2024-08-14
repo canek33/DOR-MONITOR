@@ -44,7 +44,7 @@ def cargar_unidades_medicas():
 
 unidades_medicas_data = cargar_unidades_medicas()
 
-path_to_wkhtmltopdf = '/app/vendor/wkhtmltopdf/bin/wkhtmltopdf'
+path_to_wkhtmltopdf = '/app/bin/wkhtmltopdf'
 config = pdfkit.configuration(wkhtmltopdf=path_to_wkhtmltopdf)
 
 # Modelo Problema
