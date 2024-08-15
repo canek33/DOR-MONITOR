@@ -11,6 +11,7 @@ from weasyprint import HTML, CSS
 import json
 from werkzeug.utils import secure_filename
 from werkzeug.exceptions import BadRequestKeyError
+import re  # Importación del módulo re para expresiones regulares
 
 app = Flask(__name__, static_folder='static')
 
@@ -212,7 +213,12 @@ def bienvenida():
     if 'username' in session:
         user_info = user_roles.get(session['username'])
         user_role = user_info['role'] if user_info else None
-        return render_template('bienvenida.html', welcome_message=session['welcome_message'], username=session['username'], user_role=user_role)
+        
+        # Formatear el nombre del usuario
+        username = session['username']
+        formatted_username = ' '.join(re.findall(r'[A-Z][a-z]*', username))
+        
+        return render_template('bienvenida.html', welcome_message=session['welcome_message'], username=formatted_username, user_role=user_role)
     else:
         return redirect(url_for('index'))
 
