@@ -160,6 +160,8 @@ user_roles = {
     'admin1': {'role': 'admin', 'password': 'admin123'},
     'DrCanekSerna': {'role': 'admin', 'password': 'admin123'},
     'DraEvelinGonzalez': {'role': 'admin', 'password': 'admin123'},
+    'DrRafaelAlbertoMendoza': {'role': 'admin', 'password': 'admin123'},
+    'DraAlejandraAlmeida': {'role': 'admin', 'password': 'admin123'},
     'admin2': {'role': 'admin', 'password': 'admin123'},
     'admin3': {'role': 'admin', 'password': 'admin123'},
     'admin4': {'role': 'admin', 'password': 'admin123'},
