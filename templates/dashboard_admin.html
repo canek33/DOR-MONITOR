@@ -164,7 +164,7 @@
 </head>
 <body>
     <header>
-        <h1>Dashboard Admin - {{ username }}</h1>
+        <h1>Dashboard {{ user_role.capitalize() }} - {{ username }}</h1>
         <a href="/logout" class="logout">Cerrar Sesión</a>
     </header>
     <div id="mySidebar" class="sidebar">
@@ -173,7 +173,7 @@
         <a href="/mapas">Ver Mapa</a>
         <a href="/elevadores">Ver Mapa de Elevadores</a>
         <a href="/aires">Ver Mapa de Aires</a>
-        <a href="/gestionar_usuarios">Gestionar Usuarios</a>
+        <a href="/gestionar_usuarios" {% if user_role == 'directivo' %}style="display: none;"{% endif %}>Gestionar Usuarios</a>
         <a href="/problemas_solucionados" class="btn btn-success mx-1">Problemas Solucionados</a>
         <a href="/problemas_no_solucionados" class="btn btn-danger mx-1">Problemas No Solucionados</a>
         <a href="/problemas_en_proceso" class="btn btn-warning mx-1">Problemas En Proceso</a>

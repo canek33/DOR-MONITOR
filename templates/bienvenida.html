@@ -28,18 +28,13 @@
             max-width: 500px;
             width: 90%;
             margin: 20px;
+            white-space: pre-line; /* Asegura que los saltos de línea se respeten */
         }
-        .welcome-container h1 {
+        .welcome-container h1, .welcome-container h2 {
             color: #691C32;
             margin-bottom: 20px;
             font-size: 1.8rem;
             font-weight: 700;
-        }
-        .welcome-container h2 {
-            color: #691C32;
-            margin-bottom: 30px;
-            font-size: 1.5rem;
-            font-weight: 400;
         }
         .welcome-container a {
             display: inline-block;
@@ -61,7 +56,6 @@
 <body>
     <div class="welcome-container" role="main">
         <h1>{{ welcome_message }}</h1>
-        <h2>{{ username }}</h2>
         <a href="{{ url_for('dashboard', tipo='general') }}" aria-label="Ir al dashboard general">Ir al Dashboard General</a>
         
         {% if user_role == 'operativo' %}

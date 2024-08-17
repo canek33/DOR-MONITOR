@@ -36,7 +36,7 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # Cargar datos de unidades médicas desde el archivo JSON
 def cargar_unidades_medicas():
     try:
-        with open(os.path.join(app.static_folder, 'data/unidades_medicas.json'), 'r') as file:
+        with open(os.path.join(app.static_folder, 'data/unidades_medicas.json'), 'r', encoding='utf-8') as file:
             data = json.load(file)
         return data
     except Exception as e:
@@ -45,7 +45,7 @@ def cargar_unidades_medicas():
 
 unidades_medicas_data = cargar_unidades_medicas()
 
-path_to_wkhtmltopdf = '/app/bin/wkhtmltopdf'
+path_to_wkhtmltopdf = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'  # Reemplaza con la ruta correcta
 config = pdfkit.configuration(wkhtmltopdf=path_to_wkhtmltopdf)
 # Uso de pdfkit con la configuración
 pdfkit.from_url('http://google.com', 'out.pdf', configuration=config)
@@ -163,6 +163,7 @@ user_roles = {
     'DraEvelinGonzalez': {'role': 'admin', 'password': 'admin123'},
     'DrRafaelAlbertoMendoza': {'role': 'admin', 'password': 'admin123'},
     'DraAlejandraAlmeida': {'role': 'admin', 'password': 'admin123'},
+    'DraMirnaBeltrán': {'role': 'directivo', 'password': 'directivo123'}, 
     'admin2': {'role': 'admin', 'password': 'admin123'},
     'admin3': {'role': 'admin', 'password': 'admin123'},
     'admin4': {'role': 'admin', 'password': 'admin123'},
@@ -183,23 +184,23 @@ def login():
         password = request.form['password']
         user_info = user_roles.get(username)
         
-        # Imprime las credenciales recibidas y las esperadas
-        print(f"Received username: {username}")
-        print(f"Received password: {password}")
-        if user_info:
-            print(f"Expected password: {user_info['password']}")
-
         if user_info and user_info['password'] == password:
             session['username'] = username
             session['role'] = user_info['role']
             session['state'] = user_info.get('state')
             
+            # Formatear el nombre de usuario (agregar espacios entre mayúsculas)
+            formatted_username = re.sub(r'(?<!^)(?=[A-Z])', ' ', username).replace('Dr ', 'Dr. ').replace('Dra ', 'Dra. ')
+            
+            # Asignar el mensaje de bienvenida y rol de usuario
             if user_info['role'] == 'operativo':
-                session['welcome_message'] = f'Bienvenido(a) {username}, Operativo de {session["state"]}'
+                session['welcome_message'] = f'Bienvenido(a)\n{formatted_username}\nOperativo de {session["state"]}'
             elif user_info['role'] == 'admin':
-                session['welcome_message'] = f'Bienvenido(a) {username}, Administrador'
+                session['welcome_message'] = f'Bienvenido(a)\n{formatted_username}\nAdministrador'
             elif user_info['role'] == 'superadmin':
-                session['welcome_message'] = f'Bienvenido(a) {username}, Superadministrador'
+                session['welcome_message'] = f'Bienvenido(a)\n{formatted_username}\nSuperadministrador'
+            elif user_info['role'] == 'directivo':  # Nuevo rol directivo
+                session['welcome_message'] = f'Bienvenido(a)\n{formatted_username}\nDirectivo'
             
             return redirect(url_for('bienvenida'))
         else:
@@ -213,15 +214,18 @@ def bienvenida():
     if 'username' in session:
         user_info = user_roles.get(session['username'])
         user_role = user_info['role'] if user_info else None
+
+        # Formatear el nombre de usuario (agregar espacios entre mayúsculas)
+        formatted_username = re.sub(r'(?<!^)(?=[A-Z])', ' ', session['username']).replace('Dr ', 'Dr. ')
         
-        # Formatear el nombre del usuario
-        username = session['username']
-        formatted_username = ' '.join(re.findall(r'[A-Z][a-z]*', username))
-        
-        return render_template('bienvenida.html', welcome_message=session['welcome_message'], username=formatted_username, user_role=user_role)
+        return render_template(
+            'bienvenida.html', 
+            welcome_message=session['welcome_message'], 
+            username=formatted_username,  # Cambia la variable de username a formatted_username
+            user_role=user_role
+        )
     else:
         return redirect(url_for('index'))
-
 
 @app.route('/dashboard')
 def dashboard():
@@ -232,7 +236,9 @@ def dashboard():
     username = session['username']  # Obtener el nombre de usuario de la sesión
 
     user_info = user_roles.get(username)
-    if user_info and user_info['role'] in ['admin', 'superadmin']:
+    user_role = user_info.get('role') if user_info else None  # Obtener el rol del usuario
+
+    if user_role in ['admin', 'superadmin', 'directivo']:  # Incluye el rol directivo
         problemas = Problema.query.filter_by(reportado_por_operativo=True).order_by(Problema.id.desc()).all()
 
         estados_vistos = set()
@@ -243,9 +249,10 @@ def dashboard():
                 estados_vistos.add(estado_normalizado)
                 estados.append(estado_normalizado)
 
-        return render_template('dashboard_admin.html', problemas=[problema.to_dict() for problema in problemas], estados=sorted(estados), welcome_message=welcome_message, username=username)
+        # Renderizar la plantilla con la información del rol
+        return render_template('dashboard_admin.html', problemas=[problema.to_dict() for problema in problemas], estados=sorted(estados), welcome_message=welcome_message, username=username, user_role=user_role)
     
-    elif user_info and user_info['role'] == 'operativo':
+    elif user_role == 'operativo':
         estado_asignado = user_info['state']
         tipo_dashboard = request.args.get('tipo', 'general')  # Por defecto es 'general'
         
