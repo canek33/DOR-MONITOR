@@ -46,7 +46,12 @@ def cargar_unidades_medicas():
 unidades_medicas_data = cargar_unidades_medicas()
 
 
-path_to_wkhtmltopdf = '/app/bin/wkhtmltopdf'
+# Detectar si estamos en Heroku o en un entorno local
+if 'DYNO' in os.environ:  # Si esta variable de entorno existe, estás en Heroku
+    path_to_wkhtmltopdf = '/app/bin/wkhtmltopdf'
+else:
+    path_to_wkhtmltopdf = r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'
+
 config = pdfkit.configuration(wkhtmltopdf=path_to_wkhtmltopdf)
 
 # Uso de pdfkit con la configuración
