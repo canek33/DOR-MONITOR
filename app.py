@@ -597,7 +597,7 @@ def estadisticas():
 
 @app.route('/elevadores')
 def elevadores():
-    file_path = 'C:\\Users\\rales\\Documents\\proyecto-login\\elevadores2.csv'
+    file_path = os.path.join('data', 'elevadores2.csv')  # Cambiar la ruta
     df = pd.read_csv(file_path)
 
     elevadores = df[['Latitud', 'Longitud', 'Unidad_Medica', 'Marca', 'Uso', 'Estado']].to_dict(orient='records')
@@ -610,7 +610,7 @@ def marcar_elevador():
     longitud = request.form['longitud']
     estado = request.form['estado']
 
-    file_path = 'C:\\Users\\rales\\Documents\\proyecto-login\\elevadores2.csv'
+    file_path = os.path.join('data', 'elevadores2.csv')  # Cambiar la ruta
     df = pd.read_csv(file_path)
 
     df.loc[(df['Latitud'] == float(latitud)) & (df['Longitud'] == float(longitud)), 'Estado'] = estado
@@ -620,7 +620,7 @@ def marcar_elevador():
 
 @app.route('/aires', methods=['GET', 'POST'])
 def aires():
-    file_path = 'C:\\Users\\rales\\Documents\\proyecto-login\\Levantamiento_Aires_acondicionados.xlsx'
+    file_path = os.path.join('data', 'Levantamiento_Aires_acondicionados.xlsx')  # Cambiar la ruta
     df = pd.read_excel(file_path)
 
     df.columns = df.columns.str.strip()
