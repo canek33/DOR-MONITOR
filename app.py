@@ -222,14 +222,25 @@ def bienvenida():
         user_info = user_roles.get(session['username'])
         user_role = user_info['role'] if user_info else None
 
+        # Mapear roles a sus nombres completos
+        role_mapping = {
+            'admin': 'Administrador',
+            'superadmin': 'Superadministrador',
+            'directivo': 'Directivo',
+            'operativo': 'Operativo'
+        }
+
+        # Obtener el nombre completo del rol
+        user_role_full = role_mapping.get(user_role, user_role)
+
         # Formatear el nombre de usuario (agregar espacios entre mayúsculas)
         formatted_username = re.sub(r'(?<!^)(?=[A-Z])', ' ', session['username']).replace('Dr ', 'Dr. ')
-        
+
         return render_template(
             'bienvenida.html', 
             welcome_message=session['welcome_message'], 
-            username=formatted_username,  # Cambia la variable de username a formatted_username
-            user_role=user_role
+            username=formatted_username, 
+            user_role=user_role_full
         )
     else:
         return redirect(url_for('index'))
@@ -248,6 +259,17 @@ def dashboard():
     user_info = user_roles.get(raw_username)
     user_role = user_info.get('role') if user_info else None  # Obtener el rol del usuario
 
+    # Mapear roles a sus nombres completos
+    role_mapping = {
+        'admin': 'Administrador',
+        'superadmin': 'Superadministrador',
+        'directivo': 'Directivo',
+        'operativo': 'Operativo'
+    }
+
+    # Obtener el nombre completo del rol
+    user_role_full = role_mapping.get(user_role, user_role)
+
     if user_role in ['admin', 'superadmin', 'directivo']:  # Incluye el rol directivo
         problemas = Problema.query.filter_by(reportado_por_operativo=True).order_by(Problema.id.desc()).all()
 
@@ -259,7 +281,7 @@ def dashboard():
                 estados_vistos.add(estado_normalizado)
                 estados.append(estado_normalizado)
 
-        return render_template('dashboard_admin.html', problemas=[problema.to_dict() for problema in problemas], estados=sorted(estados), welcome_message=welcome_message, username=username, user_role=user_role)
+        return render_template('dashboard_admin.html', problemas=[problema.to_dict() for problema in problemas], estados=sorted(estados), welcome_message=welcome_message, username=username, user_role=user_role_full)
     
     elif user_role == 'operativo':
         estado_asignado = user_info['state']
@@ -287,12 +309,11 @@ def dashboard():
             todas_unidades_medicas = []
 
         if tipo_dashboard == 'detallado':
-            return render_template('dashboard_operativo_detallado.html', problemas=[problema.to_dict() for problema in problemas_reportados], estado_asignado=estado_asignado, unidades_medicas=sorted(set(todas_unidades_medicas)), welcome_message=welcome_message, username=username)
+            return render_template('dashboard_operativo_detallado.html', problemas=[problema.to_dict() for problema in problemas_reportados], estado_asignado=estado_asignado, unidades_medicas=sorted(set(todas_unidades_medicas)), welcome_message=welcome_message, username=username, user_role=user_role_full)
         else:
-            return render_template('dashboard_operativo.html', problemas=[problema.to_dict() for problema in problemas_reportados], estado_asignado=estado_asignado, unidades_medicas=sorted(set(todas_unidades_medicas)), welcome_message=welcome_message, username=username)
+            return render_template('dashboard_operativo.html', problemas=[problema.to_dict() for problema in problemas_reportados], estado_asignado=estado_asignado, unidades_medicas=sorted(set(todas_unidades_medicas)), welcome_message=welcome_message, username=username, user_role=user_role_full)
     else:
         return 'Acceso no autorizado', 403
-
 
 @app.route('/gestionar_usuarios')
 def gestionar_usuarios():

@@ -60,11 +60,11 @@
         <h1>
             Bienvenido(a)<br>
             {{ username }}<br>
-            {{ user_role|title }}
+            {{ user_role }}
         </h1>
         <a href="{{ url_for('dashboard', tipo='general') }}" aria-label="Ir al dashboard general">Ir al Dashboard General</a>
         
-        {% if user_role == 'operativo' %}
+        {% if user_role == 'Operativo' %}
         <a href="{{ url_for('dashboard', tipo='detallado') }}" aria-label="Ir al dashboard detallado">Ir al Dashboard Detallado</a>
         {% endif %}
     </div>
