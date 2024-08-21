@@ -45,6 +45,20 @@ def cargar_unidades_medicas():
 
 unidades_medicas_data = cargar_unidades_medicas()
 
+def obtener_trend_data():
+    # Esta función debe devolver los datos necesarios para las gráficas
+    return {
+        'labels': ['Mayo', 'Junio', 'Julio' , 'Agosto'],
+        'data': [50, 80, 70, 40]
+    }
+
+def obtener_scatter_data():
+    # Esta función debe devolver los datos necesarios para las gráficas
+    return [
+        {'x': 5, 'y': 20},
+        {'x': 15, 'y': 10},
+        {'x': 25, 'y': 30}
+    ]
 
 # Detectar si estamos en Heroku o en un entorno local
 if 'DYNO' in os.environ:  # Si esta variable de entorno existe, estás en Heroku
@@ -271,6 +285,14 @@ def dashboard():
     user_role_full = role_mapping.get(user_role, user_role)
 
     if user_role in ['admin', 'superadmin', 'directivo']:  # Incluye el rol directivo
+        tipo_dashboard = request.args.get('tipo', 'general')
+
+        if tipo_dashboard == 'ejecutivo' and user_role == 'directivo':
+             trend_data = obtener_trend_data()  # Esta función debe devolver los datos necesarios para las gráficas
+             scatter_data = obtener_scatter_data()  # Similar a trend_data
+             return render_template('panel_ejecutivo.html', username=username, user_role=user_role_full, trend_data=trend_data, scatter_data=scatter_data)
+
+
         problemas = Problema.query.filter_by(reportado_por_operativo=True).order_by(Problema.id.desc()).all()
 
         estados_vistos = set()
@@ -281,7 +303,15 @@ def dashboard():
                 estados_vistos.add(estado_normalizado)
                 estados.append(estado_normalizado)
 
-        return render_template('dashboard_admin.html', problemas=[problema.to_dict() for problema in problemas], estados=sorted(estados), welcome_message=welcome_message, username=username, user_role=user_role_full)
+        return render_template(
+            'dashboard_admin.html', 
+            problemas=[problema.to_dict() for problema in problemas], 
+            estados=sorted(estados), 
+            welcome_message=welcome_message, 
+            username=username, 
+            user_role=user_role_full,
+            show_executive_panel=(user_role == 'directivo')  # Indicador para mostrar el botón del Panel Ejecutivo
+        )
     
     elif user_role == 'operativo':
         estado_asignado = user_info['state']
@@ -309,9 +339,25 @@ def dashboard():
             todas_unidades_medicas = []
 
         if tipo_dashboard == 'detallado':
-            return render_template('dashboard_operativo_detallado.html', problemas=[problema.to_dict() for problema in problemas_reportados], estado_asignado=estado_asignado, unidades_medicas=sorted(set(todas_unidades_medicas)), welcome_message=welcome_message, username=username, user_role=user_role_full)
+            return render_template(
+                'dashboard_operativo_detallado.html', 
+                problemas=[problema.to_dict() for problema in problemas_reportados], 
+                estado_asignado=estado_asignado, 
+                unidades_medicas=sorted(set(todas_unidades_medicas)), 
+                welcome_message=welcome_message, 
+                username=username, 
+                user_role=user_role_full
+            )
         else:
-            return render_template('dashboard_operativo.html', problemas=[problema.to_dict() for problema in problemas_reportados], estado_asignado=estado_asignado, unidades_medicas=sorted(set(todas_unidades_medicas)), welcome_message=welcome_message, username=username, user_role=user_role_full)
+            return render_template(
+                'dashboard_operativo.html', 
+                problemas=[problema.to_dict() for problema in problemas_reportados], 
+                estado_asignado=estado_asignado, 
+                unidades_medicas=sorted(set(todas_unidades_medicas)), 
+                welcome_message=welcome_message, 
+                username=username, 
+                user_role=user_role_full
+            )
     else:
         return 'Acceso no autorizado', 403
 
@@ -934,6 +980,45 @@ def enviar_seguimiento():
         print(f"Error: {e}")
         return "Ocurrió un error inesperado", 500
     
+@app.route('/panel_ejecutivo')
+def panel_ejecutivo():
+    if 'username' not in session:
+        return redirect(url_for('index'))
+
+    raw_username = session['username']
+    user_info = user_roles.get(raw_username)
+    user_role = user_info.get('role') if user_info else None
+
+    if user_role != 'directivo':
+        return redirect(url_for('dashboard'))
+
+    problemas_criticos = Problema.query.filter_by(nivel_riesgo='Alto').all()
+
+    # Asegúrate de que estas variables están siempre definidas
+    trend_data = {
+        'labels': ['Enero', 'Febrero', 'Marzo'],  # Sustituye con tus datos reales
+        'data': [5, 3, 9]  # Sustituye con tus datos reales
+    } if problemas_criticos else {
+        'labels': [],
+        'data': []
+    }
+
+    scatter_data = [
+        {'x': 10, 'y': 3},
+        {'x': 15, 'y': 5},
+        {'x': 20, 'y': 7},
+    ] if problemas_criticos else []
+
+    # Asegúrate de pasar estas variables al render_template
+    return render_template(
+        'panel_ejecutivo.html', 
+        problemas_criticos=problemas_criticos,
+        trend_data=trend_data,
+        scatter_data=scatter_data,
+        estados=[],  # Añade la lista de estados si es necesario
+        unidades_medicas=[]  # Añade la lista de unidades médicas si es necesario
+    )
+
 @app.route('/check_notifications', methods=['GET'])
 def check_notifications():
     today = datetime.now().date()

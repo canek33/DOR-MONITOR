@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Ejecutivo - ISSSTE</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: #f8f9fa;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #691C32;
+        }
+        h1 {
+            margin-bottom: 20px;
+            font-size: 2rem;
+        }
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 25px;
+            border-radius: 5px;
+            background-color: #691C32;
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            transition: background-color 0.3s ease;
+        }
+        .btn:hover {
+            background-color: #BC955C;
+        }
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .top-bar .btn {
+            margin-left: auto;
+        }
+        .filters {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+        }
+        .filters select {
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            font-size: 1rem;
+        }
+        .filters .btn {
+            margin-left: auto;
+            background-color: #691C32;
+        }
+        .card {
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .card p {
+            font-size: 1rem;
+            color: #555;
+        }
+        #chartTrend, #chartScatter {
+            margin: 20px 0;
+        }
+        .actions .btn {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="top-bar">
+            <h1>Panel Ejecutivo</h1>
+            <a href="{{ url_for('dashboard', tipo='directivo') }}" class="btn">Volver al Dashboard Directivo</a>
+        </div>
+
+        <div class="filters">
+            <form method="GET" action="{{ url_for('panel_ejecutivo') }}">
+                <select name="nivel_riesgo">
+                    <option value="">Nivel de Riesgo</option>
+                    <option value="Alto">Alto</option>
+                    <option value="Medio">Medio</option>
+                    <option value="Bajo">Bajo</option>
+                </select>
+                <select name="estado">
+                    <option value="">Estado</option>
+                    {% for estado in estados %}
+                        <option value="{{ estado }}">{{ estado }}</option>
+                    {% endfor %}
+                </select>
+                <select name="unidad_medica">
+                    <option value="">Unidad Médica</option>
+                    {% for unidad in unidades_medicas %}
+                        <option value="{{ unidad }}">{{ unidad }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn">Filtrar</button>
+            </form>
+        </div>
+
+        <div class="card">
+            <h2>Problemas Críticos</h2>
+            {% if problemas_criticos %}
+                <ul>
+                    {% for problema in problemas_criticos %}
+                        <li>{{ problema.unidad_medica }} - {{ problema.descripcion }} - {{ problema.nivel_riesgo }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No hay problemas críticos en este momento.</p>
+            {% endif %}
+        </div>
+
+        <div class="card">
+            <h2>Tendencias de Problemas Reportados</h2>
+            <canvas id="chartTrend"></canvas>
+        </div>
+
+        <div class="card">
+            <h2>Dispersión de Problemas por Nivel de Riesgo</h2>
+            <canvas id="chartScatter"></canvas>
+        </div>
+
+        <div class="card">
+            <h2>Análisis de Tendencias</h2>
+            <p>Aquí puedes incluir un resumen o conclusiones clave derivadas de los datos de tendencia, ayudando en la toma de decisiones estratégicas. Piensa en esto como el horóscopo de tus datos, pero basado en la realidad y realmente útil.</p>
+        </div>
+
+        <div class="card actions">
+            <h2>Acciones Sugeridas</h2>
+            <button class="btn action">Ajustar Recursos</button>
+            <button class="btn action">Modificar Protocolos</button>
+        </div>
+    </div>
+
+    <script>
+        // Datos para las gráficas
+        const trendData = {{ trend_data|tojson|default('{}') }};
+        const scatterData = {{ scatter_data|tojson|default('[]') }};
+
+        // Verificación y creación de las gráficas solo si los datos están disponibles
+        if (trendData && trendData.labels && trendData.labels.length > 0) {
+            const ctxTrend = document.getElementById('chartTrend').getContext('2d');
+            new Chart(ctxTrend, {
+                type: 'line',
+                data: {
+                    labels: trendData.labels,
+                    datasets: [{
+                        label: 'Problemas Reportados',
+                        data: trendData.data,
+                        backgroundColor: 'rgba(105, 28, 50, 0.2)',
+                        borderColor: 'rgba(105, 28, 50, 1)',
+                        borderWidth: 1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Cantidad de Problemas'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Tiempo'
+                            }
+                        }
+                    },
+                    plugins: {
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    }
+                }
+            });
+        }
+
+        if (scatterData && scatterData.length > 0) {
+            const ctxScatter = document.getElementById('chartScatter').getContext('2d');
+new Chart(ctxScatter, {
+    type: 'line', // Cambiado de 'scatter' a 'line'
+    data: {
+        datasets: [{
+            label: 'Nivel de Riesgo',
+            data: scatterData,
+            backgroundColor: 'rgba(105, 28, 50, 0.5)',
+            borderColor: 'rgba(105, 28, 50, 1)', // Asegúrate de que el color de la línea es visible
+            showLine: true, // Asegúrate de que las líneas sean visibles
+            fill: false, // No rellenes el área debajo de la línea
+            pointRadius: 5, // Ajusta el tamaño de los puntos
+            tension: 0 // Esto hace que las líneas sean rectas
+        }]
+    },
+    options: {
+        scales: {
+            x: {
+                type: 'linear',
+                position: 'bottom',
+                title: {
+                    display: true,
+                    text: 'Número de Problemas'
+                }
+            },
+            y: {
+                title: {
+                    display: true,
+                    text: 'Nivel de Riesgo'
+                }
+            }
+        },
+        plugins: {
+            tooltip: {
+                callbacks: {
+                    label: function(context) {
+                        return `${context.dataset.label}: Riesgo ${context.parsed.y} (Problemas: ${context.parsed.x})`;
+                    }
+                }
+            }
+        }
+    }
+});
+
+        }
+    </script>
+</body>
+</html>
+

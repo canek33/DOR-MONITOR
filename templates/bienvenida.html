@@ -63,6 +63,10 @@
             {{ user_role }}
         </h1>
         <a href="{{ url_for('dashboard', tipo='general') }}" aria-label="Ir al dashboard general">Ir al Dashboard General</a>
+
+        {% if user_role == 'Directivo' %}
+        <a href="{{ url_for('dashboard', tipo='ejecutivo') }}" aria-label="Ir al panel ejecutivo">Ir al Panel Ejecutivo</a>
+        {% endif %}
         
         {% if user_role == 'Operativo' %}
         <a href="{{ url_for('dashboard', tipo='detallado') }}" aria-label="Ir al dashboard detallado">Ir al Dashboard Detallado</a>
