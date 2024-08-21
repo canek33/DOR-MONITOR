@@ -28,13 +28,14 @@
             max-width: 500px;
             width: 90%;
             margin: 20px;
-            white-space: pre-line; /* Asegura que los saltos de línea se respeten */
         }
-        .welcome-container h1, .welcome-container h2 {
+        .welcome-container h1 {
             color: #691C32;
-            margin-bottom: 20px;
+            margin-bottom: 10px;
             font-size: 1.8rem;
             font-weight: 700;
+            font-family: 'Montserrat', sans-serif;
+            line-height: 1.5; /* Ajusta el espaciado entre líneas */
         }
         .welcome-container a {
             display: inline-block;
@@ -45,8 +46,9 @@
             text-decoration: none;
             font-size: 1rem;
             font-weight: 700;
+            font-family: 'Montserrat', sans-serif;
             transition: background-color 0.3s ease;
-            margin-top: 10px;
+            margin: 10px 5px; /* Se ajusta la separación entre botones */
         }
         .welcome-container a:hover {
             background-color: #BC955C;
@@ -55,11 +57,14 @@
 </head>
 <body>
     <div class="welcome-container" role="main">
-        <h1>{{ welcome_message }}</h1>
+        <h1>
+            Bienvenido(a)<br>
+            {{ username }}<br>
+            {{ user_role|title }}
+        </h1>
         <a href="{{ url_for('dashboard', tipo='general') }}" aria-label="Ir al dashboard general">Ir al Dashboard General</a>
         
         {% if user_role == 'operativo' %}
-        <br>
         <a href="{{ url_for('dashboard', tipo='detallado') }}" aria-label="Ir al dashboard detallado">Ir al Dashboard Detallado</a>
         {% endif %}
     </div>

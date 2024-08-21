@@ -240,9 +240,12 @@ def dashboard():
         return redirect(url_for('index'))
 
     welcome_message = session.pop('welcome_message', None)
-    username = session['username']  # Obtener el nombre de usuario de la sesión
+    raw_username = session['username']  # Obtener el nombre de usuario de la sesión
 
-    user_info = user_roles.get(username)
+    # Separar letras mayúsculas y añadir espacio si el username es todo junto (ej. DraMirnaBeltrán)
+    username = re.sub(r'([a-z])([A-Z])', r'\1 \2', raw_username).title()
+
+    user_info = user_roles.get(raw_username)
     user_role = user_info.get('role') if user_info else None  # Obtener el rol del usuario
 
     if user_role in ['admin', 'superadmin', 'directivo']:  # Incluye el rol directivo
@@ -256,7 +259,6 @@ def dashboard():
                 estados_vistos.add(estado_normalizado)
                 estados.append(estado_normalizado)
 
-        # Renderizar la plantilla con la información del rol
         return render_template('dashboard_admin.html', problemas=[problema.to_dict() for problema in problemas], estados=sorted(estados), welcome_message=welcome_message, username=username, user_role=user_role)
     
     elif user_role == 'operativo':
@@ -284,13 +286,13 @@ def dashboard():
             print(f"Error de codificación al leer el archivo JSON: {e}")
             todas_unidades_medicas = []
 
-        # Renderizar la plantilla correspondiente
         if tipo_dashboard == 'detallado':
             return render_template('dashboard_operativo_detallado.html', problemas=[problema.to_dict() for problema in problemas_reportados], estado_asignado=estado_asignado, unidades_medicas=sorted(set(todas_unidades_medicas)), welcome_message=welcome_message, username=username)
         else:
             return render_template('dashboard_operativo.html', problemas=[problema.to_dict() for problema in problemas_reportados], estado_asignado=estado_asignado, unidades_medicas=sorted(set(todas_unidades_medicas)), welcome_message=welcome_message, username=username)
     else:
         return 'Acceso no autorizado', 403
+
 
 @app.route('/gestionar_usuarios')
 def gestionar_usuarios():
