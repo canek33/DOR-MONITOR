@@ -14,6 +14,8 @@ from werkzeug.exceptions import BadRequestKeyError
 import re  # Importación del módulo re para expresiones regulares
 
 app = Flask(__name__, static_folder='static')
+BASE_DIR = app.root_path
+
 
 # Configuración de la sesión
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "una_clave_secreta_muy_segura_para_desarrollo")
@@ -35,13 +37,14 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Cargar datos de unidades médicas desde el archivo JSON
 def cargar_unidades_medicas():
+    file_path = os.path.join(BASE_DIR, 'static', 'data', 'unidades_medicas.json')
+    print("Intentando cargar unidades desde:", file_path)
     try:
-        with open(os.path.join(app.static_folder, 'data/unidades_medicas.json'), 'r', encoding='utf-8') as file:
-            data = json.load(file)
-        return data
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
     except Exception as e:
         print(f"Error al cargar unidades médicas: {e}")
-        return []
+        return {}
 
 unidades_medicas_data = cargar_unidades_medicas()
 
@@ -321,9 +324,10 @@ def dashboard():
         
         # Cargar el archivo JSON y obtener todas las unidades médicas para el estado asignado
         try:
-            with open('static/data/unidades_medicas.json', 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            
+            file_path = os.path.join(BASE_DIR, 'static', 'data', 'unidades_medicas.json')
+            with open(file_path, 'r', encoding='utf-8') as f:
+                 data = json.load(f)
+
             todas_unidades_medicas = []
             for estado, unidades in data.items():
                 if estado_asignado.lower() in estado.lower():
@@ -492,8 +496,10 @@ def obtener_unidades_medicas():
     if estado:
         estado_normalizado = normalizar_estado(estado)
         try:
-            with open('static/data/unidades_medicas.json', 'r', encoding='utf-8') as f:
+            file_path = os.path.join(BASE_DIR, 'static', 'data', 'unidades_medicas.json')
+            with open(file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
+                
             unidades_medicas = data.get(estado_normalizado, [])
         except FileNotFoundError:
             print("El archivo unidades_medicas.json no fue encontrado.")
@@ -858,8 +864,10 @@ def reporte_problemas():
 @app.route('/generate_report_pdf')
 def generate_report_pdf():
     try:
-        problemas = Problema.query.filter(Problema.estado_problema.in_(['Solucionado', 'No Solucionado', 'En Proceso'])).all()
-
+        # Recoge los problemas y genera el HTML
+        problemas = Problema.query.filter(
+            Problema.estado_problema.in_(['Solucionado', 'No Solucionado', 'En Proceso'])
+        ).all()
         rendered = render_template('reporte_problemas.html', problemas=problemas)
 
         options = {
@@ -871,15 +879,25 @@ def generate_report_pdf():
             'encoding': "UTF-8",
             'custom-header': [('Accept-Encoding', 'gzip')],
             'no-outline': None,
-            'enable-local-file-access': None  # Permite acceso a archivos locales
+            'enable-local-file-access': None
         }
 
-        # Ruta donde se almacenará el PDF
-        pdf_path = r'C:\Users\rales\Documents\proyecto-login\static\reports\ISSSTE_membretada_2024.pdf'
+        # Directorio dinámico para los reportes
+        reports_dir = os.path.join(BASE_DIR, 'static', 'reports')
+        os.makedirs(reports_dir, exist_ok=True)
 
+        # Ruta donde se almacenará el PDF
+        pdf_path = os.path.join(reports_dir, 'ISSSTE_membretada_2024.pdf')
+
+        # Genera el PDF al archivo
         pdfkit.from_string(rendered, pdf_path, options=options, configuration=config)
 
-        return send_file(pdf_path, as_attachment=True, download_name='ISSSTE_REPORTE_2024.pdf')
+        # Envía el PDF al cliente
+        return send_file(
+            pdf_path,
+            as_attachment=True,
+            download_name='ISSSTE_REPORTE_2024.pdf'
+        )
 
     except Exception as e:
         print(f"Error al generar el PDF: {e}")

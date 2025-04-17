@@ -1,71 +1,61 @@
-/* Archivo: static/css/style.css */
-body {
+/* ===========================
+   Estilos Globales (Login, Dashboard…) 
+   =========================== */
+
+   body {
     font-family: 'Arial', sans-serif;
     background: url('/static/images/ISSSTE_PPT_plantilla_2024.jpg') no-repeat center center fixed;
     background-size: cover;
-    margin: 0;
-    padding: 0;
+    margin: 0; padding: 0;
     color: #333;
-}
-
-.login-container {
+  }
+  
+  /* Login */
+  .login-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh; /* Usar toda la altura de la ventana */
-}
-
-.login-box {
-    background-color: rgba(188, 149, 92, 0.4); /* Color de fondo transparente */
+    height: 100vh;
+  }
+  .login-box {
+    background-color: rgba(188, 149, 92, 0.4);
     padding: 20px;
-    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
     width: 300px;
     border-radius: 8px;
     text-align: center;
     animation: fadeIn 1s ease-in-out;
-}
-
-@keyframes fadeIn {
+  }
+  @keyframes fadeIn {
     from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-h2 {
-    color: r#9e7c53;
+    to   { opacity: 1; }
+  }
+  h2 {
+    color: #9e7c53;
     margin-bottom: 20px;
-}
-
-.input-group {
-    position: relative;
-    margin-bottom: 15px;
-}
-
-label {
+  }
+  .input-group { position: relative; margin-bottom: 15px; }
+  label {
     display: block;
     margin-bottom: 5px;
     color: white;
-}
-
-.form-input {
+  }
+  .form-input {
     margin: 10px 0;
     padding: 10px;
     width: calc(100% - 22px);
-    display: block;
-    background-color: rgba(152, 152, 154, 0.1); /* Caja de texto transparente */
+    background-color: rgba(152, 152, 154, 0.1);
     border: 1px solid #ddd;
     border-radius: 5px;
     color: white;
-}
-
-.toggle-password {
+  }
+  .toggle-password {
     position: absolute;
-    right: 10px;
-    top: 35px;
+    right: 10px; top: 35px;
     cursor: pointer;
     color: white;
-}
-
-input[type="submit"] {
+  }
+  input[type="submit"] {
     background-color: #a3092f;
     color: white;
     border: none;
@@ -73,26 +63,253 @@ input[type="submit"] {
     margin-top: 10px;
     cursor: pointer;
     border-radius: 5px;
-}
-
-input[type="submit"]:hover {
+  }
+  input[type="submit"]:hover {
     background-color: #c4143d;
-}
-
-.recover-link {
+  }
+  .recover-link {
     display: block;
     margin-top: 10px;
     color: white;
     text-decoration: none;
-}
-
-.recover-link:hover {
+  }
+  .recover-link:hover {
     text-decoration: underline;
-}
-
-footer {
+  }
+  footer {
     text-align: center;
     padding: 20px 0;
     background-color: #ffffff;
     color: #8a656e;
+  }
+  
+  /* ===========================
+     Estilos del Mapa 
+     =========================== */
+  
+  /* Sobrescribe fondo para la página de mapa */
+  body.map-page {
+    background-image: url('/static/images/ISSSTE_FONDO_BLANCO.jpg');
+    background-size: cover;
+    background-attachment: fixed;
+  }
+  
+  /* Header y botón volver */
+  header {
+    background-color: #691C32;
+    color: white;
+    text-align: center;
+    padding: 1em 0;
+    position: relative;
+  }
+  .btn-back {
+    position: absolute;
+    top: 10px; right: 20px;
+    background-color: #A95757;
+    color: white;
+    padding: 8px 15px;
+    border-radius: 5px;
+    text-decoration: none;
+  }
+  .btn-back:hover {
+    background-color: #BC9SSC;
+  }
+  
+  /* Contenedor principal */
+  .container {
+    width: 80%;
+    margin: 20px auto;
+    background: rgba(255,255,255,0.9);
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    border-radius: 10px;
+  }
+  
+  /* Titulares */
+  h1, h2 {
+    color: #691C32;
+  }
+  
+  /* Tabla de marcadores */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    background-color: rgba(111,114,113,0.8);
+    color: #333;
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  table, th, td { border: 1px solid #ddd; }
+  th, td { padding: 12px; text-align: left; }
+  th {
+    background-color: #BC9SSC;
+    color: white;
+    font-weight: bold;
+  }
+  tr:nth-child(even) { background-color: rgba(255,255,255,0.9); }
+  tr:hover       { background-color: rgba(111,114,113,0.5); }
+  a { text-decoration: none; color: #691C32; }
+  a:hover { color: #BC9SSC; }
+  
+  /* Controles de búsqueda */
+  .search-container {
+    margin-bottom: 20px;
+  }
+  #searchInput {
+    width: 100%; padding: 10px;
+    border-radius: 5px; border: 1px solid #ccc;
+  }
+  
+  /* Mapa */
+  #mapid {
+    height: calc(100vh - 260px);
+    margin-bottom: 20px;
+    border: 3px solid #BC9SSC;
+    border-radius: 8px;
+  }
+  
+  /* Botón alejar */
+  .btn-zoom-out {
+    display: none;
+    margin: 20px 0;
+    padding: 10px 20px;
+    background-color: #691C32;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  .btn-zoom-out:hover {
+    background-color: #BC9SSC;
+  }
+  
+  /* Leyenda de Leaflet */
+  .legend {
+    background: rgba(255,255,255,0.9);
+    padding: 10px;
+    line-height: 1.4;
+    border-radius: 5px;
+    box-shadow: 0 0 5px rgba(0,0,0,0.3);
+  }
+  .legend h4 {
+    margin: 0 0 5px;
+    font-size: 1em;
+    color: #691C32;
+  }
+  .legend i {
+    width: 12px; height: 12px;
+    float: left; margin-right: 6px;
+    opacity: 0.8;
+  }
+  .legend i:nth-child(4)  { background: green; }
+  .legend i:nth-child(8)  { background: orange; }
+  .legend i:nth-child(12) { background: red; }
+  
+  /* Estilos de popup */
+  .leaflet-popup-content-wrapper {
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  }
+  .leaflet-popup-tip {
+    background: white;
+  }
+  
+  /* === Página de Estadísticas === */
+
+.stats-page {
+  background-color: #F5F5F5;
+}
+
+.page-header {
+  background-color: #691C32;
+  color: white;
+  text-align: center;
+  padding: 1rem 0;
+  position: relative;
+}
+.page-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+.btn-back {
+  position: absolute;
+  top: 1rem; right: 1rem;
+  background-color: #BC955C;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 5px;
+  text-decoration: none;
+}
+.btn-back:hover {
+  background-color: #6F7271;
+}
+
+.stats-container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+.filter label {
+  display: block;
+  margin-bottom: 0.5rem;
+  color: #691C32;
+}
+.filter select,
+.filter input {
+  width: 100%;
+  padding: 0.5rem;
+  border-radius: 5px;
+  border: 1px solid #ccc;
+}
+.filter-action button#applyBtn {
+  background-color: #691C32;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.filter-action button#applyBtn:hover {
+  background-color: #BC955C;
+}
+
+.charts {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+@media (min-width: 800px) {
+  .charts {
+    grid-template-columns: 1fr 1fr;
+  }
+  /* Hacer que el scatter ocupe las dos columnas en pantallas grandes */
+  .scatter-full {
+    grid-column: span 2;
+  }
+}
+
+.chart-card {
+  background: white;
+  padding: 1rem;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+.chart-card h2 {
+  margin-top: 0;
+  color: #691C32;
+}
+
+.page-footer {
+  background-color: #F5F5F5;
+  text-align: center;
+  padding: 1rem 0;
+  margin-top: 2rem;
 }
